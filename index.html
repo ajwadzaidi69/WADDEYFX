@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0b1220">
+<meta name="theme-color" content="#000000">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-180.png">
@@ -13,535 +13,289 @@
 <meta name="apple-mobile-web-app-title" content="Waddey FX">
 <title>Mapping Market SMC</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap">
 <style>
-/* Susun atur: satu lajur mobile; kad status di atas, chart, kemudian panel analisis. Dark-first, satu rupa. */
+/* Susun atur terminal: chart besar di kiri, harga + signal di kanan (desktop). Phone: harga melekat di atas, chart padat, signal, tab. */
 :root{
-  --bg:#0b1220; --panel:#111a2c; --panel2:#16213a; --line:#24304a; --fg:#e6ecf7; --muted:#8c9ab4;
-  --accent:#4f8cff; --buy:#1fc7a4; --sell:#ff6b6b; --wait:#e8b84a; --eq:#9aa6bd;
+  --bg:#0a0f1a; --panel:#101828; --panel2:#151f33; --line:#1f2a40; --fg:#e8edf6; --muted:#8391aa; --dim:#5d6a82;
+  --accent:#5b8cff; --buy:#22c7a0; --sell:#f2666b; --wait:#e6b450; --eq:#97a3b8; --liq:#b98cf0;
   --font:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --gut:max(12px,env(safe-area-inset-left,0px));
   color-scheme:dark;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{margin:0}
-body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:14px;line-height:1.45;
-  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-.wrap{max-width:none;margin:0;padding-block:12px 32px;
-  padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));
-  display:grid;gap:12px}
-header{display:flex;flex-wrap:wrap;align-items:center;gap:10px;justify-content:space-between}
-.brand{font-weight:700;letter-spacing:.02em;font-size:15px}
-.brand small{display:block;font-weight:400;color:var(--muted);font-size:11px;letter-spacing:.06em;text-transform:uppercase}
-.conn{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
-.dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
-.dot.ok{background:var(--buy)} .dot.err{background:var(--sell)} .dot.busy{background:var(--wait)}
-.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-select,input,button{font:inherit;color:var(--fg);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:7px 10px}
-button{cursor:pointer}
-button:hover{border-color:var(--accent)}
-button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
-button.on{border-color:var(--buy);color:var(--buy)}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;min-width:0}
-.card h2{margin:0 0 10px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
-.grid2{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:14px;line-height:1.45;padding-bottom:env(safe-area-inset-bottom,0px)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:30}
+button,select,input{font:inherit;color:var(--fg)}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
-/* Kad status */
-.status{display:grid;gap:12px}
-.status-top{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
-.sym{font-size:13px;color:var(--muted)}
-.price{font-size:30px;font-weight:600;line-height:1.1}
-.chip{display:inline-flex;align-items:center;gap:6px;font-weight:700;letter-spacing:.06em;border-radius:999px;padding:6px 14px;font-size:14px;border:1px solid}
-.chip.WAIT{color:var(--wait);border-color:var(--wait);background:color-mix(in srgb,var(--wait) 12%,transparent)}
+.muted{color:var(--muted)} .small{font-size:12px}
+
+/* ---------- Header ---------- */
+.hdr{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+  padding:calc(env(safe-area-inset-top,0px) + 10px) max(12px,env(safe-area-inset-right,0px)) 10px var(--gut);border-bottom:1px solid var(--line)}
+.brand{font-weight:700;font-size:14px;letter-spacing:.04em;line-height:1.2}
+.brand span{display:block;font-weight:500;font-size:10px;letter-spacing:.12em;color:var(--muted)}
+.tools{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:6px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:7px 10px;cursor:pointer;font-size:13px;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn.on{border-color:var(--buy);color:var(--buy)}
+.btn svg{width:16px;height:16px;flex:none}
+.btn .lbl{display:inline}
+select.btn{padding-right:6px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none}
+.dot.ok{background:var(--buy)} .dot.err{background:var(--sell)} .dot.busy{background:var(--wait)}
+.settings{margin:10px max(12px,env(safe-area-inset-right,0px)) 0 var(--gut);background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:grid;gap:10px}
+.settings label{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.pushbox{display:grid;gap:8px;border-top:1px solid var(--line);padding-top:10px}
+.pushbox textarea{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px;font-family:var(--mono);font-size:11px;color:var(--fg);resize:vertical}
+.settings input{width:100px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-family:var(--mono)}
+.banner{margin:10px max(12px,env(safe-area-inset-right,0px)) 0 var(--gut);font-size:12px;padding:7px 12px;border-radius:8px;border:1px solid color-mix(in srgb,var(--wait) 50%,transparent);color:var(--wait);background:color-mix(in srgb,var(--wait) 8%,transparent)}
+.banner.err{border-color:color-mix(in srgb,var(--sell) 50%,transparent);color:var(--sell);background:color-mix(in srgb,var(--sell) 8%,transparent)}
+
+/* ---------- Grid utama ---------- */
+.main{display:grid;gap:10px;padding:10px max(12px,env(safe-area-inset-right,0px)) 16px var(--gut);
+  grid-template-columns:minmax(0,1fr);grid-template-areas:"quote" "chart" "signal" "tabs"}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;min-width:0}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+
+/* Quote (harga) */
+.quote{grid-area:quote;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;
+  position:sticky;top:env(safe-area-inset-top,0px);z-index:20;box-shadow:0 6px 16px -10px #000}
+.q-sym{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.q-px{font-size:26px;font-weight:700;line-height:1.1}
+.q-broker{font-size:11px;color:var(--muted);min-height:0}
+.chip{display:inline-flex;align-items:center;justify-content:center;font-weight:700;letter-spacing:.06em;border-radius:999px;padding:6px 14px;font-size:13px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
 .chip.BUY{color:var(--buy);border-color:var(--buy);background:color-mix(in srgb,var(--buy) 14%,transparent)}
 .chip.SELL{color:var(--sell);border-color:var(--sell);background:color-mix(in srgb,var(--sell) 14%,transparent)}
-.chip.OFF{color:var(--muted);border-color:var(--line)}
-.chip.AKTIF{color:var(--accent);border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent)}
-.res-win{color:var(--buy)} .res-loss{color:var(--sell)}
-.why{color:var(--muted);font-size:13px}
-.adj{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
-.adj input{width:90px;padding:5px 8px;font-family:var(--mono)}
-.sub{font-size:12px;color:var(--muted)}
-.plan{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
-.plan div{background:var(--panel2);border-radius:8px;padding:8px 10px}
-.plan b{display:block;font-size:11px;color:var(--muted);font-weight:500;letter-spacing:.04em;text-transform:uppercase}
-.plan .v{font-family:var(--mono);font-size:15px}
-.checks{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
-.checks h3{margin:0 0 6px;font-size:13px}
-.checks ul{list-style:none;margin:0;padding:0;display:grid;gap:4px}
-.checks li{display:flex;gap:8px;align-items:flex-start;font-size:13px}
-.mark{flex:none;width:18px;text-align:center;font-weight:700}
-.ok .mark{color:var(--buy)} .no .mark{color:var(--muted)} .no{color:var(--muted)}
-.opt{font-size:11px;color:var(--muted)}
+.chip.WAIT{color:var(--wait);border-color:var(--wait);background:color-mix(in srgb,var(--wait) 12%,transparent)}
+
 /* Chart */
-.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
-.tabs button{padding:5px 12px;font-size:12px}
-.tabs button.act{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent)}
-#chart{height:clamp(360px,58vh,720px);width:100%}
-.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:var(--muted);margin-top:8px}
-.legend i{display:inline-block;width:14px;height:2px;vertical-align:middle;margin-right:4px}
-/* Jadual */
+.chartcard{grid-area:chart;padding:8px 10px 8px;display:flex;flex-direction:column;gap:6px}
+.tfbar{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+.tfbar::-webkit-scrollbar{display:none}
+.tfbar button{flex:none;background:transparent;border:1px solid transparent;border-radius:6px;padding:4px 10px;font-size:12px;font-family:var(--mono);color:var(--muted);cursor:pointer}
+.tfbar button:hover{color:var(--fg)}
+.tfbar button.act{color:var(--fg);background:var(--panel2);border-color:var(--line)}
+#chart{width:100%;height:clamp(240px,38vh,330px)}
+.legend{display:flex;gap:12px;font-size:10.5px;color:var(--muted);overflow-x:auto;white-space:nowrap;scrollbar-width:none}
+.legend::-webkit-scrollbar{display:none}
+.legend i{display:inline-block;width:12px;height:2px;vertical-align:middle;margin-right:4px}
+
+/* Signal */
+.sigcard{grid-area:signal;padding:14px;display:grid;gap:12px;align-content:start}
+.sig-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 8px}
+.sig-main{display:flex;align-items:center;gap:14px}
+.sig-dir{font-size:34px;font-weight:700;letter-spacing:.04em;line-height:1}
+.sig-dir.BUY{color:var(--buy)} .sig-dir.SELL{color:var(--sell)} .sig-dir.NONE{color:var(--muted);font-size:22px}
+.sig-meta{display:grid;gap:2px;font-size:12px;color:var(--muted)}
+.sig-meta b{color:var(--fg);font-weight:600;font-size:11px;letter-spacing:.08em}
+.levels{display:grid;gap:0;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.lv{display:grid;grid-template-columns:auto 1fr auto;align-items:baseline;gap:10px;padding:9px 12px;border-bottom:1px solid var(--line)}
+.lv:last-child{border-bottom:0}
+.lv .k{font-size:12px;color:var(--muted);min-width:64px}
+.lv .v{font-family:var(--mono);font-size:18px;font-weight:600;text-align:right}
+.lv .r{font-family:var(--mono);font-size:11px;color:var(--dim);min-width:34px;text-align:right}
+.lv.sl .v{color:var(--sell)} .lv.tp .v{color:var(--buy)}
+.conf{display:grid;gap:6px}
+.conf-top{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.conf-top b{color:var(--fg);font-family:var(--mono)}
+.seg{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.seg i{height:6px;border-radius:3px;background:var(--panel2)}
+.seg i.on{background:var(--accent)}
+.seg.BUY i.on{background:var(--buy)} .seg.SELL i.on{background:var(--sell)}
+
+/* Tab */
+.tabs{grid-area:tabs;padding:0}
+.tabnav{display:flex;gap:2px;overflow-x:auto;border-bottom:1px solid var(--line);padding:6px 8px 0;scrollbar-width:none}
+.tabnav::-webkit-scrollbar{display:none}
+.tabnav button{flex:none;background:transparent;border:0;border-bottom:2px solid transparent;padding:8px 12px;font-size:13px;color:var(--muted);cursor:pointer}
+.tabnav button.act{color:var(--fg);border-bottom-color:var(--accent)}
+.tabpane{padding:12px 14px}
 .tbl{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:13px}
-th{text-align:left;font-weight:500;color:var(--muted);font-size:11px;letter-spacing:.04em;text-transform:uppercase;padding:6px 8px;border-bottom:1px solid var(--line)}
+th{text-align:left;font-weight:500;color:var(--muted);font-size:11px;letter-spacing:.05em;text-transform:uppercase;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
 td{padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
 tr:last-child td{border-bottom:0}
-.tag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
-.tag.rej{color:var(--buy);border-color:var(--buy)} .tag.acc{color:var(--sell);border-color:var(--sell)}
-.tag.up{color:var(--buy);border-color:var(--buy)} .tag.dn{color:var(--sell);border-color:var(--sell)} .tag.mix{color:var(--wait);border-color:var(--wait)}
-.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:13px}
+.tag{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.tag.up,.tag.rej{color:var(--buy);border-color:color-mix(in srgb,var(--buy) 60%,transparent)}
+.tag.dn,.tag.acc{color:var(--sell);border-color:color-mix(in srgb,var(--sell) 60%,transparent)}
+.tag.mix{color:var(--wait);border-color:color-mix(in srgb,var(--wait) 60%,transparent)}
+.pos{color:var(--buy)} .neg{color:var(--sell)}
+.cols{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.cols h3{margin:0 0 6px;font-size:13px}
+.checks{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.checks li{display:flex;gap:8px;font-size:13px}
+.checks li.no{color:var(--muted)}
+.mk{width:16px;flex:none;text-align:center;font-weight:700}
+.checks li.ok .mk{color:var(--buy)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:13px;margin:0}
 .kv dt{color:var(--muted)} .kv dd{margin:0}
-/* Bar premium/discount */
-.pd{position:relative;height:14px;border-radius:7px;background:linear-gradient(90deg,color-mix(in srgb,var(--buy) 45%,var(--panel2)),var(--panel2) 50%,color-mix(in srgb,var(--sell) 45%,var(--panel2)));margin:10px 0 6px}
+.pd{position:relative;height:10px;border-radius:5px;margin:8px 0 4px;background:linear-gradient(90deg,color-mix(in srgb,var(--buy) 45%,var(--panel2)),var(--panel2) 50%,color-mix(in srgb,var(--sell) 45%,var(--panel2)))}
 .pd .eq{position:absolute;left:50%;top:-3px;bottom:-3px;width:2px;background:var(--eq)}
-.pd .pt{position:absolute;top:50%;width:14px;height:14px;border-radius:50%;background:var(--fg);border:3px solid var(--bg);transform:translate(-50%,-50%)}
-.pd-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
-.log{list-style:none;margin:0;padding:0;display:grid;gap:6px;max-height:220px;overflow:auto;font-size:13px}
-.log li{display:flex;gap:10px}
-.log time{color:var(--muted);font-family:var(--mono);font-size:12px;flex:none}
-.banner{border-radius:10px;padding:10px 12px;font-size:13px;border:1px solid var(--wait);color:var(--wait);background:color-mix(in srgb,var(--wait) 10%,transparent)}
-.banner.err{border-color:var(--sell);color:var(--sell);background:color-mix(in srgb,var(--sell) 10%,transparent)}
-footer{color:var(--muted);font-size:12px;display:grid;gap:4px}
-.top{display:grid;gap:12px;grid-template-columns:1fr}
-.lower{display:grid;gap:12px;grid-template-columns:1fr}
+.pd .pt{position:absolute;top:50%;width:14px;height:14px;border-radius:50%;background:var(--fg);border:3px solid var(--panel);transform:translate(-50%,-50%)}
+.pd-l{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
+.log{list-style:none;margin:0;padding:0;display:grid;gap:8px;font-size:13px}
+.log li{display:grid;grid-template-columns:auto 1fr;gap:10px}
+.log time{color:var(--muted);font-family:var(--mono);font-size:12px}
+.foot{padding:0 max(12px,env(safe-area-inset-right,0px)) 20px var(--gut);font-size:11px;color:var(--dim);display:grid;gap:2px}
+
+/* ---------- Desktop ---------- */
 @media (min-width:1100px){
-  .top{grid-template-columns:1fr 1fr;align-items:start}
-  .lower{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .lower .span2{grid-column:1 / -1}
+  .main{grid-template-columns:minmax(0,1fr) 400px;grid-template-rows:auto auto auto;align-items:start;
+    grid-template-areas:"chart quote" "chart signal" "tabs tabs"}
+  .chartcard{align-self:stretch}
+  .quote{position:static;box-shadow:none}
+  .q-px{font-size:32px}
+  #chart{flex:1;height:auto;min-height:360px}
+  .sig-dir{font-size:40px}
 }
-@media (min-width:1600px){
-  body{font-size:15px}
-  .lower{grid-template-columns:repeat(3,minmax(0,1fr))}
-  .lower .span2{grid-column:span 2}
-  .price{font-size:36px}
+@media (max-width:600px){
+  .btn .lbl{display:none}
+  .btn{padding:7px 9px}
+  .hdr{padding-bottom:8px}
+  .brand{font-size:13px}
 }
-#btnInstall[hidden]{display:none}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
-<div class="wrap">
 
-<header>
-  <div class="brand">MAPPING MARKET SMC BY WADDEY FX<small>Bias · Liquidity · Premium/Discount</small></div>
-  <div class="controls">
-    <select id="symSel" aria-label="Pasaran">
-      <option value="frxXAUUSD">XAUUSD (Emas)</option>
-      <option value="frxXAGUSD">XAGUSD (Perak)</option>
+<header class="hdr">
+  <div class="brand">MAPPING MARKET SMC BY WADDEY FX<span>BIAS · LIQUIDITY · PREMIUM / DISCOUNT</span></div>
+  <div class="tools">
+    <select id="symSel" class="btn" aria-label="Pasaran">
+      <option value="frxXAUUSD">XAUUSD</option>
+      <option value="frxXAGUSD">XAGUSD</option>
       <option value="frxEURUSD">EURUSD</option>
       <option value="R_100">Volatility 100</option>
       <option value="1HZ100V">Volatility 100 (1s)</option>
       <option value="custom">Simbol lain…</option>
     </select>
-    <input id="symCustom" placeholder="cth: frxGBPUSD" size="12" hidden aria-label="Simbol Deriv">
-    <button id="btnAlert" type="button">Hidupkan amaran</button>
-    <button id="btnWake" type="button">Skrin kekal hidup</button>
-    <button id="btnInstall" type="button" hidden>Pasang app</button>
-    <span class="conn"><span id="connDot" class="dot busy"></span><span id="connTxt">Menyambung…</span></span>
+    <button id="btnAlert" class="btn" type="button" aria-label="Amaran">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+      <span class="lbl" id="alertLbl">Amaran off</span>
+    </button>
+    <button id="btnInstall" class="btn" type="button" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+      <span class="lbl">Pasang app</span>
+    </button>
+    <button id="btnSet" class="btn" type="button" aria-label="Tetapan" aria-expanded="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span class="lbl">Tetapan</span>
+    </button>
   </div>
 </header>
 
-<div id="banner" class="banner" hidden></div>
-
-<div class="top">
-<section class="card status" aria-live="polite">
-  <div class="status-top">
-    <div>
-      <div class="sym" id="symName">XAUUSD</div>
-      <div class="price num" id="price">—</div>
-      <div class="sub num" id="brokerPx"></div>
-    </div>
-    <div style="display:grid;gap:6px;justify-items:end">
-      <span class="chip OFF" id="chip">MEMUAT</span>
-      <span class="why" id="grade"></span>
-    </div>
-  </div>
-  <div class="why" id="why">Mengambil data candle…</div>
-  <label class="adj" for="offIn">Beza harga broker (broker − Deriv):
-    <input id="offIn" type="number" step="0.01" inputmode="decimal" value="0">
-    <span>Contoh: MT5 tunjuk 3880.10, Deriv tunjuk 3879.70 → masukkan 0.40. Pelan entry dipaparkan dalam harga broker.</span>
+<section class="settings" id="settings" hidden>
+  <label for="symCustom" id="customRow" hidden>Simbol Deriv:
+    <input id="symCustom" placeholder="cth: frxGBPUSD" style="width:150px"> <span class="small muted">tekan Enter</span>
   </label>
-  <div class="plan" id="plan" hidden></div>
-  <div class="checks" id="checks"></div>
+  <label for="offIn">Beza harga broker (broker − Deriv):
+    <input id="offIn" type="number" step="0.01" inputmode="decimal" value="0">
+  </label>
+  <div class="small muted">Bandingkan harga MT5 dengan harga di sini pada masa yang sama. Contoh: MT5 3880.10, Deriv 3879.70 → masukkan 0.40. Entry, SL dan TP akan dipaparkan dalam harga broker.</div>
+  <div><button id="btnWake" class="btn" type="button">Skrin kekal hidup</button></div>
+  <div class="pushbox">
+    <b>Notifikasi bila app tutup</b>
+    <div class="small muted">Signal dihantar oleh server GitHub setiap ~5–15 minit, walaupun app ditutup dan phone dikunci.</div>
+    <div><button id="btnPush" class="btn" type="button">Aktifkan notifikasi latar belakang</button></div>
+    <div id="pushOut" hidden>
+      <div class="small muted" style="margin-bottom:6px">Salin kod di bawah, kemudian simpan di GitHub sebagai secret bernama <b>PUSH_SUB</b>.</div>
+      <textarea id="pushSub" rows="4" readonly aria-label="Kunci notifikasi"></textarea>
+      <div style="margin-top:6px"><button id="btnCopy" class="btn" type="button">Salin kod</button></div>
+    </div>
+    <div class="small" id="pushMsg"></div>
+  </div>
 </section>
 
-<section class="card status" id="eaCard">
-  <h2 style="margin:0">ANALYSIS WADDEY FX M5</h2>
-  <div class="status-top">
-    <span class="chip OFF" id="eaChip">MEMUAT</span>
-    <span class="why" id="eaInfo"></span>
-  </div>
-  <div class="plan" id="eaPlan" hidden></div>
-  <div class="why" id="eaNote">Signal terbaru sentiasa dipaparkan, termasuk bila arah berubah. Trigger: Momentum, BOS/CHoCH, FVG (min 1) · bias OFF · SL struktur (3 ATR, maks 6 ATR) · TP1 3R tutup 90% · TP2 4R · trailing 1.5 ATR · ATR 5.</div>
-  <div>
-    <h2 style="margin:6px 0 4px">Simulasi (data Deriv) · signal bertentangan = pusing arah</h2>
-    <div class="why" id="eaStats"></div>
-  </div>
-  <div class="tbl"><table>
-    <thead><tr><th>Masa</th><th>Arah</th><th>Trigger</th><th>Entry</th><th>SL</th><th>TP1 / TP2</th><th>Keputusan</th><th>R</th></tr></thead>
-    <tbody id="eaBody"></tbody>
-  </table></div>
-</section>
-</div>
+<div class="banner" id="banner" hidden></div>
 
-<section class="card">
-  <div class="tabs" id="tfTabs">
-    <button type="button" data-tf="M1">M1</button>
-    <button type="button" data-tf="M5">M5</button>
-    <button type="button" data-tf="M15" class="act">M15</button>
-    <button type="button" data-tf="M30">M30</button>
-    <button type="button" data-tf="H1">H1</button>
-    <button type="button" data-tf="H4">H4</button>
-    <button type="button" data-tf="D1">D1</button>
-    <button type="button" data-tf="W1">W1</button>
-  </div>
-  <div id="chart"></div>
-  <div class="legend">
-    <span><i style="background:var(--sell)"></i>Premium</span>
-    <span><i style="background:var(--eq)"></i>EQ 50%</span>
-    <span><i style="background:var(--buy)"></i>Discount</span>
-    <span><i style="background:#c792ea"></i>Liquidity (PDH/PDL/PWH/PWL)</span>
-    <span><i style="background:var(--accent)"></i>Entry / SL / TP (hanya jika pelan wujud)</span>
-  </div>
-  <div class="why" style="margin-top:6px">Analisis guna bar tertutup sahaja. Masa dalam zon waktu peranti anda.</div>
-</section>
-
-<div class="lower">
-  <section class="card">
-    <h2>Arah</h2>
-    <dl class="kv" id="dirBox"></dl>
-  </section>
-  <section class="card">
-    <h2>Premium / Discount (julat H1)</h2>
-    <div id="pdBox"></div>
+<main class="main">
+  <section class="card quote" aria-live="polite">
+    <div>
+      <div class="q-sym"><span class="dot busy" id="connDot"></span><span id="qSym">XAUUSD · Deriv</span></div>
+      <div class="q-px num" id="price">—</div>
+      <div class="q-broker num" id="brokerPx"></div>
+    </div>
+    <span class="chip" id="chip">MEMUAT</span>
   </section>
 
-<section class="card span2">
-  <h2>Liquidity hari ini — diambil? rejection / acceptance</h2>
-  <div class="tbl"><table>
-    <thead><tr><th>Paras</th><th>Harga</th><th>Diambil</th><th>Bar pertama</th><th>Status sekarang</th><th>Jarak</th></tr></thead>
-    <tbody id="liqBody"></tbody>
-  </table></div>
-</section>
-
-  <section class="card">
-    <h2>POI: Zon S/D M15 · OB · FVG M5</h2>
-    <div class="tbl"><table>
-      <thead><tr><th>Jenis</th><th>Julat</th><th>Kekuatan</th><th>Jarak</th></tr></thead>
-      <tbody id="poiBody"></tbody>
-    </table></div>
+  <section class="card chartcard">
+    <div class="tfbar" id="tfTabs">
+      <button type="button" data-tf="M1">M1</button>
+      <button type="button" data-tf="M5">M5</button>
+      <button type="button" data-tf="M15">M15</button>
+      <button type="button" data-tf="M30">M30</button>
+      <button type="button" data-tf="H1">H1</button>
+      <button type="button" data-tf="H4">H4</button>
+      <button type="button" data-tf="D1">D1</button>
+      <button type="button" data-tf="W1">W1</button>
+    </div>
+    <div id="chart"></div>
+    <div class="legend">
+      <span><i style="background:var(--sell)"></i>Premium</span>
+      <span><i style="background:var(--eq)"></i>EQ</span>
+      <span><i style="background:var(--buy)"></i>Discount</span>
+      <span><i style="background:var(--liq)"></i>PDH/PDL/PWH/PWL</span>
+      <span><i style="background:#f0c674"></i>Entry</span>
+    </div>
   </section>
-  <section class="card">
-    <h2>Log amaran</h2>
-    <ul class="log" id="log"><li><time>—</time><span>Belum ada perubahan status.</span></li></ul>
-  </section>
-</div>
 
-<footer>
-  <div id="updated">Kemas kini terakhir: —</div>
-  <div>Data: Deriv API awam (percuma, tanpa login). Harga boleh berbeza sedikit daripada broker anda; semak harga di app MT5 sebelum entry.</div>
-  <div>Hari & minggu dikira ikut UTC 00:00 (Isnin untuk minggu). Alat bantu keputusan, bukan nasihat kewangan.</div>
+  <section class="card sigcard">
+    <div class="sig-head">
+      <span class="eyebrow">Analysis Waddey FX M5</span>
+      <span class="small muted" id="sigAge"></span>
+    </div>
+    <div class="sig-main">
+      <div class="sig-dir NONE" id="sigDir">MEMUAT</div>
+      <div class="sig-meta"><b id="sigLabel"></b><span id="sigTrig"></span></div>
+    </div>
+    <div class="levels" id="levels" hidden></div>
+    <div class="conf">
+      <div class="conf-top"><span>Selari dengan analisis SMC</span><b id="confN">—</b></div>
+      <div class="seg" id="confSeg"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="small muted" id="smcState"></div>
+    </div>
+    <div class="small muted" id="simNote"></div>
+  </section>
+
+  <section class="card tabs">
+    <nav class="tabnav" id="tabNav">
+      <button type="button" data-tab="smc">Syarat SMC</button>
+      <button type="button" data-tab="liq">Liquidity</button>
+      <button type="button" data-tab="poi">POI</button>
+      <button type="button" data-tab="dir">Arah &amp; P/D</button>
+      <button type="button" data-tab="sim">Simulasi</button>
+      <button type="button" data-tab="log">Log</button>
+    </nav>
+    <div class="tabpane" data-pane="smc"><div class="cols" id="checks"></div></div>
+    <div class="tabpane" data-pane="liq" hidden>
+      <div class="tbl"><table><thead><tr><th>Paras</th><th>Harga</th><th>Diambil</th><th>Bar pertama</th><th>Status</th><th>Jarak</th></tr></thead><tbody id="liqBody"></tbody></table></div>
+    </div>
+    <div class="tabpane" data-pane="poi" hidden>
+      <div class="tbl"><table><thead><tr><th>Jenis</th><th>Julat</th><th>Kekuatan</th><th>Jarak</th></tr></thead><tbody id="poiBody"></tbody></table></div>
+    </div>
+    <div class="tabpane" data-pane="dir" hidden><div class="cols"><dl class="kv" id="dirBox"></dl><div id="pdBox"></div></div></div>
+    <div class="tabpane" data-pane="sim" hidden>
+      <div class="small muted" id="eaStats" style="margin-bottom:8px"></div>
+      <div class="tbl"><table><thead><tr><th>Masa</th><th>Arah</th><th>Trigger</th><th>Entry</th><th>SL</th><th>TP1 / TP2</th><th>Keputusan</th><th>R</th></tr></thead><tbody id="eaBody"></tbody></table></div>
+    </div>
+    <div class="tabpane" data-pane="log" hidden><ul class="log" id="log"></ul></div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div id="updated">Kemas kini: —</div>
+  <div>Data: Deriv API awam. Harga boleh berbeza sedikit daripada broker; semak MT5 sebelum entry. Hari & minggu ikut UTC. Alat bantu keputusan, bukan nasihat kewangan.</div>
 </footer>
-</div>
 
 <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+<script src="analysis.js"></script>
 
-<!-- ============ ANALISIS (fungsi tulen, tiada DOM) ============ -->
-<script id="analysis">
-const TFSEC = {W1:604800, D1:86400, H4:14400, H1:3600, M30:1800, M15:900, M5:300, M1:60};
-
-function ema(vals, p){
-  const out = new Array(vals.length).fill(null); if(vals.length < p) return out;
-  let s = 0; for(let i=0;i<p;i++) s += vals[i]; let e = s/p; out[p-1] = e;
-  const k = 2/(p+1); for(let i=p;i<vals.length;i++){ e = vals[i]*k + e*(1-k); out[i] = e; }
-  return out;
-}
-function atrArr(c, p){
-  const out = new Array(c.length).fill(null); if(c.length < p+1) return out;
-  const tr = c.map((b,i)=> i===0 ? b.h-b.l : Math.max(b.h-b.l, Math.abs(b.h-c[i-1].c), Math.abs(b.l-c[i-1].c)));
-  let a = 0; for(let i=1;i<=p;i++) a += tr[i]; a /= p; out[p] = a;
-  for(let i=p+1;i<c.length;i++){ a = (a*(p-1)+tr[i])/p; out[i] = a; }
-  return out;
-}
-const lastVal = arr => { for(let i=arr.length-1;i>=0;i--) if(arr[i]!=null) return arr[i]; return null; };
-function isPH(c,p,L,R){ for(let j=1;j<=L;j++) if(c[p-j].h >= c[p].h) return false; for(let j=1;j<=R;j++) if(c[p+j].h > c[p].h) return false; return true; }
-function isPL(c,p,L,R){ for(let j=1;j<=L;j++) if(c[p-j].l <= c[p].l) return false; for(let j=1;j<=R;j++) if(c[p+j].l < c[p].l) return false; return true; }
-
-// Struktur SMC: BOS/CHoCH, Order Block, FVG, sweep
-function structure(c, L=3){
-  let trend=0, swH=null, swL=null, hB=true, lB=true;
-  let bullOB=null, bearOB=null, bullFVG=null, bearFVG=null;
-  const events=[], pivH=[], pivL=[];
-  for(let k=2*L;k<c.length;k++){
-    const p = k-L;
-    if(isPH(c,p,L,L)){ swH={p:c[p].h,i:p}; hB=false; pivH.push({p:c[p].h,i:p,conf:k}); }
-    if(isPL(c,p,L,L)){ swL={p:c[p].l,i:p}; lB=false; pivL.push({p:c[p].l,i:p,conf:k}); }
-    if(bullOB  && c[k].c < bullOB.bot)  bullOB=null;
-    if(bearOB  && c[k].c > bearOB.top)  bearOB=null;
-    if(bullFVG && c[k].c < bullFVG.bot) bullFVG=null;
-    if(bearFVG && c[k].c > bearFVG.top) bearFVG=null;
-    if(!hB && swH && c[k].c > swH.p){
-      hB=true; const ch = trend===-1; trend=1;
-      events.push({i:k,dir:1,type:ch?'CHoCH':'BOS',lvl:swH.p});
-      for(let j=k-1;j>=Math.max(0,k-15);j--) if(c[j].c < c[j].o){ bullOB={top:c[j].h,bot:c[j].l,i:j}; break; }
-    }
-    if(!lB && swL && c[k].c < swL.p){
-      lB=true; const ch = trend===1; trend=-1;
-      events.push({i:k,dir:-1,type:ch?'CHoCH':'BOS',lvl:swL.p});
-      for(let j=k-1;j>=Math.max(0,k-15);j--) if(c[j].c > c[j].o){ bearOB={top:c[j].h,bot:c[j].l,i:j}; break; }
-    }
-    if(k>=2){
-      if(c[k].l > c[k-2].h) bullFVG={top:c[k].l,bot:c[k-2].h,i:k};
-      if(c[k].h < c[k-2].l) bearFVG={top:c[k-2].l,bot:c[k].h,i:k};
-    }
-  }
-  return {trend, swH, swL, events, bullOB, bearOB, bullFVG, bearFVG, pivH, pivL};
-}
-
-// Sweep: bar dalam N terakhir menembusi swing (yang sudah disahkan sebelumnya) dan tutup balik
-function recentSweep(c, st, N=12){
-  const n=c.length; let bull=null, bear=null;
-  for(let k=Math.max(0,n-N);k<n;k++){
-    const lows = st.pivL.filter(q=>q.conf<k).slice(-3), highs = st.pivH.filter(q=>q.conf<k).slice(-3);
-    for(const q of lows)  if(c[k].l < q.p && c[k].c > q.p) bull={i:k,lvl:q.p,ext:c[k].l};
-    for(const q of highs) if(c[k].h > q.p && c[k].c < q.p) bear={i:k,lvl:q.p,ext:c[k].h};
-  }
-  return {bull, bear};
-}
-
-function tfDirection(c){
-  if(c.length < 60) return {dir:0, s:0, e:0};
-  const st = structure(c,3);
-  const closes = c.map(b=>b.c), e20 = lastVal(ema(closes,20)), e50 = lastVal(ema(closes,50));
-  const e = e20>e50 ? 1 : e20<e50 ? -1 : 0;
-  return {dir: st.trend===e ? e : 0, s: st.trend, e, st};
-}
-
-// Zon Supply/Demand (port kod zon EA: pivot + base, tinggi dihad ATR)
-function buildZones(c){
-  const a = atrArr(c,14), sup=[], dem=[];
-  const L=4, R=4, B=10, MINH=0.42, MAXH=1.15, SAME=0.38, CONF=0.22, MAXN=3;
-  const overlap=(arr,top,bot,tolA)=>arr.some(z=> (bot<=z.top+tolA && top>=z.bot-tolA) || Math.abs((top+bot)/2-(z.top+z.bot)/2)<=tolA);
-  for(let k=B+L+R+2;k<c.length;k++){
-    const at=a[k]; if(!at) continue;
-    for(let z=sup.length-1;z>=0;z--){ if(c[k].c>sup[z].top){ sup.splice(z,1); continue; } if(c[k].h>=sup[z].bot && c[k].l<=sup[z].top) sup[z].touch=k; }
-    for(let z=dem.length-1;z>=0;z--){ if(c[k].c<dem[z].bot){ dem.splice(z,1); continue; } if(c[k].h>=dem[z].bot && c[k].l<=dem[z].top) dem[z].touch=k; }
-    const p=k-R;
-    const add=(isSup)=>{
-      let wH=-Infinity,wL=Infinity,bH=-Infinity,bL=Infinity;
-      for(let j=p-B+1;j<=p;j++){ wH=Math.max(wH,c[j].h); wL=Math.min(wL,c[j].l); bH=Math.max(bH,c[j].o,c[j].c); bL=Math.min(bL,c[j].o,c[j].c); }
-      let top = isSup ? wH : bH, bot = isSup ? bL : wL;
-      const mid=(top+bot)/2;
-      if(top-bot < at*MINH){ top=mid+at*MINH/2; bot=mid-at*MINH/2; }
-      if(top-bot > at*MAXH){ if(isSup) bot=top-at*MAXH; else top=bot+at*MAXH; }
-      let react=0;
-      if(isSup){ let lo=Infinity; for(let j=p+1;j<=k;j++) lo=Math.min(lo,c[j].l); react=(c[p].h-lo)/at; }
-      else     { let hi=-Infinity; for(let j=p+1;j<=k;j++) hi=Math.max(hi,c[j].h); react=(hi-c[p].l)/at; }
-      const same = isSup?sup:dem, other = isSup?dem:sup;
-      if(same.some(z=> (bot<=z.top && top>=z.bot) || Math.abs(mid-(z.top+z.bot)/2)<=at*SAME)) return;
-      if(overlap(other,top,bot,at*CONF)) return;
-      same.push({top,bot,react,start:p,touch:p,t:c[p].t,kind:isSup?'Supply':'Demand'});
-      while(same.length>MAXN) same.shift();
-    };
-    if(isPH(c,p,L,R)) add(true);
-    if(isPL(c,p,L,R)) add(false);
-  }
-  const grade = r => r>=2 ? 'STRONG' : r>=1.2 ? 'MID' : 'BASE';
-  sup.forEach(z=>z.grade=grade(z.react)); dem.forEach(z=>z.grade=grade(z.react));
-  return {sup, dem};
-}
-
-// Julat dagangan H1 untuk premium/discount
-function dealingRange(c, price){
-  const st = structure(c,3);
-  let hi = st.pivH.length ? st.pivH[st.pivH.length-1].p : Math.max(...c.slice(-50).map(b=>b.h));
-  let lo = st.pivL.length ? st.pivL[st.pivL.length-1].p : Math.min(...c.slice(-50).map(b=>b.l));
-  if(hi <= lo){ hi = Math.max(...c.slice(-50).map(b=>b.h)); lo = Math.min(...c.slice(-50).map(b=>b.l)); }
-  hi = Math.max(hi, price); lo = Math.min(lo, price);
-  const eq=(hi+lo)/2, pos = hi>lo ? (price-lo)/(hi-lo) : 0.5;
-  return {hi, lo, eq, pos, zone: pos>0.5 ? 'Premium' : pos<0.5 ? 'Discount' : 'EQ'};
-}
-
-const weekKey = t => { const d=new Date(t*1000); const day=(d.getUTCDay()+6)%7; return Math.floor((t - day*86400)/86400); };
-
-// Paras liquidity: PDH/PDL/PWH/PWL dengan status hari ini
-function liquidity(d1, m5, nowSec){
-  const out=[];
-  const todayStart = Math.floor(nowSec/86400)*86400;
-  // Hujung minggu / cuti: "hari ini" = hari dagangan terakhir yang ada data
-  let sessStart = todayStart;
-  if(!m5.some(b=>b.t>=todayStart) && m5.length) sessStart = Math.floor(m5[m5.length-1].t/86400)*86400;
-  const closedDays = d1.filter(b=>b.t < sessStart);
-  if(!closedDays.length) return out;
-  const pd = closedDays[closedDays.length-1];
-  const curW = weekKey(sessStart), weeks = new Map();
-  for(const b of d1){ const k=weekKey(b.t); if(k>=curW) continue; const w=weeks.get(k)||{h:-Infinity,l:Infinity}; w.h=Math.max(w.h,b.h); w.l=Math.min(w.l,b.l); weeks.set(k,w); }
-  const wk = [...weeks.keys()].sort((a,b)=>a-b), pw = wk.length ? weeks.get(wk[wk.length-1]) : null;
-  const today = m5.filter(b=>b.t>=sessStart), last = m5[m5.length-1];
-  const lv = [{name:'Previous day high',k:'PDH',p:pd.h,side:1},{name:'Previous day low',k:'PDL',p:pd.l,side:-1}];
-  if(pw){ lv.push({name:'Previous week high',k:'PWH',p:pw.h,side:1},{name:'Previous week low',k:'PWL',p:pw.l,side:-1}); }
-  for(const L of lv){
-    const first = today.find(b => L.side>0 ? b.h > L.p : b.l < L.p);
-    let status='Belum diambil', cls='';
-    if(first && last){
-      const beyond = L.side>0 ? last.c > L.p : last.c < L.p;
-      status = beyond ? 'Acceptance' : 'Rejection'; cls = beyond ? 'acc' : 'rej';
-    }
-    out.push({...L, taken:!!first, firstT:first?first.t:null, status, cls, dist: last ? last.c - L.p : 0});
-  }
-  return out;
-}
-
-// Gabungan analisis + penilaian signal
-function analyze(D, nowSec){
-  const m5=D.M5, m15=D.M15, h1=D.H1, h4=D.H4, d1=D.D1;
-  const price = m5[m5.length-1].c;
-  const dir = {H4: tfDirection(h4), H1: tfDirection(h1), M15: tfDirection(m15)};
-  const st5 = structure(m5,3), sw5 = recentSweep(m5, st5, 12);
-  const atr5 = lastVal(atrArr(m5,14)), atr15 = lastVal(atrArr(m15,14));
-  const range = dealingRange(h1, price);
-  const liq = liquidity(d1, m5, nowSec);
-  const zones = buildZones(m15);
-  const n5 = m5.length;
-  const lastEv = st5.events[st5.events.length-1] || null;
-  const recentEv = d => st5.events.filter(e=>e.dir===d && n5-1-e.i < 12).pop() || null;
-
-  // Regime M15 berbanding arah H1
-  let regime='Ranging';
-  const h1d = dir.H1.dir, m15st = dir.M15.st;
-  if(h1d!==0 && m15st){
-    const ev = m15st.events[m15st.events.length-1];
-    if(m15st.trend===h1d) regime='Continuation';
-    else if(ev && ev.type==='CHoCH' && ev.dir===-h1d) regime='Reversal (awal)';
-    else regime='Retracement';
-  }
-
-  // POI berhampiran harga
-  const near = (top,bot) => price <= top + atr15 && price >= bot - atr15;
-  const poi = [];
-  zones.dem.forEach(z=>poi.push({type:'Demand M15',dir:1,top:z.top,bot:z.bot,grade:z.grade}));
-  zones.sup.forEach(z=>poi.push({type:'Supply M15',dir:-1,top:z.top,bot:z.bot,grade:z.grade}));
-  if(st5.bullOB)  poi.push({type:'Bullish OB M5',dir:1,top:st5.bullOB.top,bot:st5.bullOB.bot,grade:'—'});
-  if(st5.bearOB)  poi.push({type:'Bearish OB M5',dir:-1,top:st5.bearOB.top,bot:st5.bearOB.bot,grade:'—'});
-  if(st5.bullFVG) poi.push({type:'Bullish FVG M5',dir:1,top:st5.bullFVG.top,bot:st5.bullFVG.bot,grade:'—'});
-  if(st5.bearFVG) poi.push({type:'Bearish FVG M5',dir:-1,top:st5.bearFVG.top,bot:st5.bearFVG.bot,grade:'—'});
-  poi.forEach(p=>{ p.near = near(p.top,p.bot); p.dist = price > p.top ? price-p.top : price < p.bot ? price-p.bot : 0; });
-
-  const liqRej = s => liq.some(L=>L.side===s && L.status==='Rejection');
-  const mk = (d)=>{
-    const s = d; // 1 buy, -1 sell
-    const ev = recentEv(d), sweep = d>0 ? sw5.bull : sw5.bear;
-    const checks = [
-      {k:'H4 tidak menentang', ok: dir.H4.dir !== -d, opt:true},
-      {k: d>0 ? 'Trend H1 naik' : 'Trend H1 turun', ok: dir.H1.dir === d},
-      {k: d>0 ? 'Harga di Discount (bawah EQ)' : 'Harga di Premium (atas EQ)', ok: d>0 ? price < range.eq : price > range.eq},
-      {k: d>0 ? 'Liquidity bawah diambil + rejection' : 'Liquidity atas diambil + rejection', ok: liqRej(-d) || !!sweep},
-      {k: d>0 ? 'M5 CHoCH/BOS naik (12 bar)' : 'M5 CHoCH/BOS turun (12 bar)', ok: !!ev},
-      {k: d>0 ? 'POI bullish dekat harga' : 'POI bearish dekat harga', ok: poi.some(p=>p.dir===d && p.near)}
-    ];
-    const req = checks[1].ok && checks[2].ok && checks[4].ok && (checks[3].ok || checks[5].ok);
-    const score = checks.filter(x=>x.ok).length;
-    let plan=null;
-    if(req && atr5 && atr15){
-      const entry = price;
-      const swingExt = d>0 ? Math.min(...m5.slice(-12).map(b=>b.l)) : Math.max(...m5.slice(-12).map(b=>b.h));
-      let sl = d>0 ? Math.min(swingExt, sweep?sweep.ext:Infinity) - 0.2*atr5 : Math.max(swingExt, sweep?sweep.ext:-Infinity) + 0.2*atr5;
-      let risk = Math.abs(entry-sl);
-      risk = Math.min(Math.max(risk, 0.5*atr15), 3*atr15);
-      sl = entry - d*risk;
-      const tp1 = entry + d*risk;
-      const cands = [...liq.map(L=>L.p), range.hi, range.lo, ...(d>0?zones.sup.map(z=>z.bot):zones.dem.map(z=>z.top))]
-        .filter(x => d>0 ? (x >= entry + 1.5*risk && x <= entry + 4*risk) : (x <= entry - 1.5*risk && x >= entry - 4*risk))
-        .sort((a,b)=> d>0 ? a-b : b-a);
-      const tp2 = cands.length ? cands[0] : entry + d*2*risk;
-      plan = {entry, sl, tp1, tp2, rr: Math.abs(tp2-entry)/risk, poi: poi.find(p=>p.dir===d && p.near) || null};
-    }
-    return {checks, req, score, grade: req ? (checks[0].ok && checks[3].ok && checks[5].ok ? 'A+' : 'A') : null, plan};
-  };
-  const buy = mk(1), sell = mk(-1);
-  let status='WAIT', side=null;
-  if(buy.req && !sell.req) { status='BUY'; side=buy; }
-  else if(sell.req && !buy.req) { status='SELL'; side=sell; }
-  else if(buy.req && sell.req) { status='WAIT'; }
-  return {price, dir, regime, range, liq, zones, poi, st5, lastEv, buy, sell, status, side, atr5, atr15};
-}
-// ===== Logik EA (preset 20252026.set) =====
-const EA_CFG = {swing:3, smcBars:300, atrP:5, fastEMA:5, slowEMA:13, minBodyATR:0.6, minBodyRatio:0.5, minTrig:1,
-  useMom:true, useBOS:true, useFVG:true, slATR:3.0, maxSLATR:6.0, slStruct:true, slBuf:0.2,
-  tp1R:3.0, tp2R:4.0, partial:0.9, beR:0.1, trailATR:1.5};
-
-function eaClose(p, px, t, why, cfg){
-  const r = (px - p.entry) * p.dir / p.risk;
-  p.R = p.tp1Hit ? cfg.partial*cfg.tp1R + (1-cfg.partial)*r : r;
-  p.closed = true; p.exit = px; p.exitT = t; p.res = why;
-}
-function eaManage(p, b, atr, cfg){
-  const d = p.dir;
-  if(d>0 ? b.l <= p.sl : b.h >= p.sl){ eaClose(p, p.sl, b.t, p.tp1Hit ? 'Trailing/BE' : 'SL', cfg); return; }
-  if(!p.tp1Hit && (d>0 ? b.h >= p.tp1 : b.l <= p.tp1)){ p.tp1Hit = true; p.sl = p.entry + d*p.risk*cfg.beR; }
-  if(d>0 ? b.h >= p.tp2 : b.l <= p.tp2){ eaClose(p, p.tp2, b.t, 'TP2', cfg); return; }
-  if(p.tp1Hit && atr){ const nsl = b.c - d*atr*cfg.trailATR; if(d>0 ? (nsl>p.sl && nsl>p.entry) : (nsl<p.sl && nsl<p.entry)) p.sl = nsl; }
-}
-// Jalankan logik EA bar demi bar. Signal terbaru sentiasa dipaparkan.
-// Simulasi: signal bertentangan menutup trade semasa dan membuka arah baru (pusing arah).
-function eaSim(m5, m15, cfg=EA_CFG){
-  const n = m5.length, closes = m5.map(b=>b.c);
-  const ef = ema(closes,cfg.fastEMA), es = ema(closes,cfg.slowEMA), at = atrArr(m5,cfg.atrP);
-  const trades=[], signals=[]; let pos=null;
-  const planFor = (i, d, st) => {
-    const b = m5[i], atr = at[i], price = b.c, zn = buildZones(m15.filter(z => z.t + 900 <= b.t + 300));
-    let supLvl = null, opp = 0;
-    if(d>0){ let best=-Infinity; zn.dem.forEach(z=>{ if(z.bot<price && z.top>best){ best=z.top; supLvl=z.bot; } });
-             const ups = zn.sup.filter(z=>z.bot>price).map(z=>z.bot); if(ups.length) opp = Math.min(...ups); }
-    else   { let best=Infinity; zn.sup.forEach(z=>{ if(z.top>price && z.bot<best){ best=z.bot; supLvl=z.top; } });
-             const dns = zn.dem.filter(z=>z.top<price).map(z=>z.top); if(dns.length) opp = Math.max(...dns); }
-    let sl = price - d*atr*cfg.slATR;
-    if(cfg.slStruct){
-      const g = atr*0.5; let lvl = null;
-      const cands = d>0 ? [st.swL&&st.swL.p, st.bullOB&&st.bullOB.bot, supLvl] : [st.swH&&st.swH.p, st.bearOB&&st.bearOB.top, supLvl];
-      for(const c of cands){ if(c==null) continue; if(d>0 ? c < price-g : c > price+g) lvl = lvl==null ? c : (d>0 ? Math.max(lvl,c) : Math.min(lvl,c)); }
-      if(lvl!=null) sl = lvl - d*atr*cfg.slBuf;
-    }
-    if(Math.abs(price-sl) > atr*cfg.maxSLATR) sl = price - d*atr*cfg.maxSLATR;
-    const risk = Math.abs(price-sl), tp1 = price + d*risk*cfg.tp1R;
-    let tp2 = price + d*risk*cfg.tp2R;
-    if(opp){ const cap = opp - d*atr*0.1; if(d>0 ? (cap<tp2 && cap>tp1) : (cap>tp2 && cap<tp1)) tp2 = cap; }
-    return {t:b.t, dir:d, entry:price, sl, sl0:sl, tp1, tp2, risk, tp1Hit:false, closed:false, R:0};
-  };
-  let lastSt = null;
-  for(let i=Math.max(cfg.smcBars,30); i<n; i++){
-    const b = m5[i], atr = at[i];
-    if(pos){ eaManage(pos, b, atr, cfg); if(pos.closed){ trades.push(pos); pos=null; } }
-    if(!atr || ef[i]==null || es[i]==null) continue;
-    const w = m5.slice(i-cfg.smcBars+1, i+1), st = structure(w, cfg.swing), last = w.length-1;
-    const lastE = st.events[st.events.length-1], ev = lastE && lastE.i===last ? lastE : null;
-    const body = Math.abs(b.c-b.o), range = b.h-b.l;
-    const big = body >= atr*cfg.minBodyATR && range > 0 && body/range >= cfg.minBodyRatio;
-    const momB = big && b.c>b.o && ef[i]>es[i], momS = big && b.c<b.o && ef[i]<es[i];
-    const fB = st.bullFVG && st.bullFVG.i < last-1 && b.l <= st.bullFVG.top && b.c > st.bullFVG.bot && b.c > b.o;
-    const fS = st.bearFVG && st.bearFVG.i < last-1 && b.h >= st.bearFVG.bot && b.c < st.bearFVG.top && b.c < b.o;
-    const tb=[], ts=[];
-    if(cfg.useMom && momB) tb.push('Momentum'); if(cfg.useBOS && ev && ev.dir===1) tb.push(ev.type); if(cfg.useFVG && fB) tb.push('FVG');
-    if(cfg.useMom && momS) ts.push('Momentum'); if(cfg.useBOS && ev && ev.dir===-1) ts.push(ev.type); if(cfg.useFVG && fS) ts.push('FVG');
-    let buy = tb.length >= cfg.minTrig, sell = ts.length >= cfg.minTrig;
-    if(buy && sell){ if(tb.length===ts.length) continue; if(tb.length>ts.length) sell=false; else buy=false; }
-    if(!buy && !sell) continue;
-    const d = buy ? 1 : -1, sig = {t:b.t, i, dir:d, trig:(buy?tb:ts).join(' '), st};
-    signals.push(sig);
-    if(pos && pos.dir !== d){ eaClose(pos, b.c, b.t, 'Pusing arah', cfg); trades.push(pos); pos=null; }
-    if(!pos){ pos = planFor(i, d, st); pos.trig = sig.trig; sig.plan = pos; }
-  }
-  const latest = signals[signals.length-1] || null;
-  if(latest && !latest.plan){ latest.plan = planFor(latest.i, latest.dir, latest.st); latest.plan.trig = latest.trig; }
-  signals.forEach(x=>{ delete x.st; });
-  const lastT = n ? m5[n-1].t : 0, fresh = latest && latest.t === lastT ? latest : null;
-  const s0 = m5[Math.max(cfg.smcBars,30)];
-  return {trades, pos, signals, latest, fresh, lastT, from: s0 ? s0.t : lastT};
-}
-if(typeof module!=='undefined') module.exports={analyze,structure,buildZones,liquidity,dealingRange,tfDirection,eaSim};
-</script>
-
-<!-- ============ DATA + PAPARAN ============ -->
 <script id="app">
 (function(){
 const ENDPOINTS = ['wss://api.derivws.com/trading/v1/options/ws/public', 'wss://ws.derivws.com/websockets/v3?app_id=1089'];
@@ -552,19 +306,19 @@ const store = { get(k,d){ try{ const v=localStorage.getItem('pps_'+k); return v=
                 set(k,v){ try{ localStorage.setItem('pps_'+k, JSON.stringify(v)); }catch(e){} } };
 
 let ws=null, epIdx=0, reqId=1, pending=new Map(), tickSub=null, livePrice=null, lastData=null, lastA=null;
-let sym = store.get('sym','frxXAUUSD'), chartTf = store.get('tf','M15'), alertsOn=false, busy=false, wakeLock=null;
+let sym = store.get('sym','frxXAUUSD'), chartTf = store.get('tf','M15'), curTab = store.get('tab','smc');
+let alertsOn=false, busy=false, wakeLock=null, timer=null, barTimer=null;
 let lastStatus = store.get('lastStatus_'+sym, null);
-let offset = +store.get('off_'+sym, 0) || 0, srvOff = 0, barTimer = null;
-const nowSrv = () => Date.now()/1000 + srvOff;
+let offset = +store.get('off_'+sym, 0) || 0, srvOff = 0;
 const logItems = store.get('log', []);
+const nowSrv = () => Date.now()/1000 + srvOff;
 
 const esc = s => String(s).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const dp = p => p==null ? 2 : p < 20 ? 5 : p < 1000 ? 3 : 2;
 const fmt = (v, ref) => v==null || !isFinite(v) ? '—' : Number(v).toFixed(dp(ref ?? v));
 const fmtT = t => t ? new Date(t*1000).toLocaleString('ms-MY',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:false}) : '—';
 const symLabel = s => ({frxXAUUSD:'XAUUSD',frxXAGUSD:'XAGUSD',frxEURUSD:'EURUSD',R_100:'Volatility 100','1HZ100V':'Volatility 100 (1s)'}[s] || s);
-
-function setConn(state, txt){ $('connDot').className='dot '+state; $('connTxt').textContent=txt; }
+function setConn(state){ $('connDot').className='dot '+state; }
 function banner(msg, err){ const b=$('banner'); if(!msg){ b.hidden=true; return; } b.hidden=false; b.className='banner'+(err?' err':''); b.textContent=msg; }
 
 // ---------- WebSocket ----------
@@ -576,7 +330,7 @@ function connectOnce(url){
     sock.onerror = ()=>{ if(!opened){ clearTimeout(to); reject(new Error('gagal sambung')); } };
     sock.onclose = ()=>{
       if(ws===sock){ ws=null; pending.forEach(p=>p.reject(new Error('Sambungan terputus'))); pending.clear(); tickSub=null;
-        setConn('err','Terputus, cuba semula…'); setTimeout(start, 5000); }
+        setConn('err'); setTimeout(start, 5000); }
     };
     sock.onmessage = ev=>{
       let m; try{ m=JSON.parse(ev.data); }catch(e){ return; }
@@ -591,7 +345,7 @@ async function ensureConn(){
   let lastErr;
   for(let a=0;a<ENDPOINTS.length;a++){
     const url = ENDPOINTS[(epIdx+a)%ENDPOINTS.length];
-    try{ await connectOnce(url); epIdx=(epIdx+a)%ENDPOINTS.length; setConn('ok','Bersambung'); return; }catch(e){ lastErr=e; }
+    try{ await connectOnce(url); epIdx=(epIdx+a)%ENDPOINTS.length; setConn('ok'); return; }catch(e){ lastErr=e; }
   }
   throw lastErr || new Error('gagal sambung');
 }
@@ -613,43 +367,41 @@ async function subscribeTicks(){
   try{ if(tickSub){ await send({forget:tickSub}).catch(()=>{}); tickSub=null; }
        const r = await send({ticks:sym, subscribe:1}); tickSub = r.subscription && r.subscription.id;
        if(r.tick){ livePrice=+r.tick.quote; renderPrice(); } }
-  catch(e){ /* harga hidup tidak wajib; guna harga candle */ }
+  catch(e){}
 }
 
-// ---------- Kitaran kemas kini ----------
+// ---------- Kemas kini ----------
 async function refresh(){
   if(busy) return; busy=true;
   try{
-    setConn('busy','Mengemas kini…');
+    setConn('busy');
     await ensureConn();
     const D={}, ALL={};
     for(const tf of ['D1','H4','H1','M30','M15','M5','M1']){ const r = await candles(tf); D[tf]=tf==='D1'?r.all:r.closed; ALL[tf]=r.all; }
     ALL.W1 = weekly(ALL.D1);
-    if(D.M5.length < 60 || D.H1.length < 60){ throw new Error('Data tidak mencukupi untuk simbol ini'); }
+    if(D.M5.length < 60 || D.H1.length < 60) throw new Error('Data tidak mencukupi untuk simbol ini');
     lastData = {D, ALL};
     const now = nowSrv();
-    const age = now - D.M5[D.M5.length-1].t;
-    banner(age > 3600 ? 'Pasaran tutup atau tiada data baru. Analisis guna bar terakhir yang ada.' : null);
+    banner(now - D.M5[D.M5.length-1].t > 3600 ? 'Pasaran tutup atau tiada data baru. Analisis guna bar terakhir yang ada.' : null);
     lastA = analyze(D, now);
     try{ lastA.ea = eaSim(D.M5, D.M15); }catch(e){ lastA.ea = null; }
     render(lastA);
-    setConn('ok','Bersambung');
-    $('updated').textContent = 'Kemas kini terakhir: ' + new Date().toLocaleTimeString('ms-MY',{hour12:false}) + ' · auto selepas setiap candle M5 tutup';
+    setConn('ok');
+    $('updated').textContent = 'Kemas kini: ' + new Date().toLocaleTimeString('ms-MY',{hour12:false}) + ' · automatik selepas setiap candle M5 tutup';
   }catch(e){
-    setConn('err','Ralat');
+    setConn('err');
     banner('Tidak dapat ambil data: ' + e.message + '. Akan cuba semula.', true);
   }finally{ busy=false; }
 }
-let timer=null;
 async function start(){
   try{ await ensureConn();
        try{ const r = await send({time:1}); if(r.time) srvOff = r.time - Date.now()/1000; }catch(e){}
-       await subscribeTicks(); }catch(e){ setConn('err','Gagal sambung'); banner('Tidak dapat sambung ke server data. Semak internet. Cuba semula dalam 10 saat.', true); setTimeout(start,10000); return; }
+       await subscribeTicks(); }
+  catch(e){ setConn('err'); banner('Tidak dapat sambung ke server data. Semak internet. Cuba semula dalam 10 saat.', true); setTimeout(start,10000); return; }
   await refresh();
   clearInterval(timer); timer=setInterval(refresh, REFRESH_MS);
   scheduleBarRefresh();
 }
-// Kemas kini 2 saat selepas setiap candle M5 tutup, supaya signal keluar segera
 function scheduleBarRefresh(){
   clearTimeout(barTimer);
   const now = nowSrv(), next = (Math.floor(now/300)+1)*300 + 2;
@@ -661,57 +413,62 @@ setInterval(()=>{ if(ws && ws.readyState===1) ws.send(JSON.stringify({ping:1}));
 function renderPrice(){
   const p = livePrice ?? (lastA && lastA.price);
   $('price').textContent = fmt(p, p);
-  $('brokerPx').textContent = p!=null && offset ? '≈ harga broker ' + fmt(p+offset, p) : '';
+  $('brokerPx').textContent = p!=null && offset ? '≈ broker ' + fmt(p+offset, p) : '';
 }
 const tagDir = d => d===1 ? '<span class="tag up">Naik</span>' : d===-1 ? '<span class="tag dn">Turun</span>' : '<span class="tag mix">Bercampur</span>';
 
 function render(A){
-  const ref = A.price;
-  $('symName').textContent = symLabel(sym) + ' · Deriv';
+  $('qSym').textContent = symLabel(sym) + ' · Deriv';
   renderPrice();
-  const chip=$('chip'); chip.className='chip '+A.status; chip.textContent=A.status;
-  const side = A.side;
-  $('grade').textContent = side ? 'Gred '+side.grade : `BUY ${A.buy.score}/6 · SELL ${A.sell.score}/6`;
-  $('why').textContent = A.status==='WAIT'
-     ? (A.buy.req && A.sell.req ? 'Syarat BUY dan SELL kedua-duanya lengkap. Pasaran bercanggah, tunggu.' : 'Syarat wajib belum lengkap. Tunggu sehingga semua tanda ✓ wajib dipenuhi.')
-     : `Semua syarat wajib ${A.status} dipenuhi pada bar tertutup terakhir. Semak harga broker dan buat keputusan anda sendiri.`;
-  const plan=$('plan');
-  if(side && side.plan){
-    const P=side.plan; plan.hidden=false; const o=offset, tag = o ? ' (broker)' : '';
-    plan.innerHTML = `<div><b>Entry${tag}</b><span class="v">${fmt(P.entry+o,ref)}</span></div>
-      <div><b>Stop loss${tag}</b><span class="v" style="color:var(--sell)">${fmt(P.sl+o,ref)}</span></div>
-      <div><b>TP1 (1R)${tag}</b><span class="v" style="color:var(--buy)">${fmt(P.tp1+o,ref)}</span></div>
-      <div><b>TP2${tag}</b><span class="v" style="color:var(--buy)">${fmt(P.tp2+o,ref)}</span></div>
-      <div><b>Risk : reward</b><span class="v">1 : ${P.rr.toFixed(1)}</span></div>
-      <div><b>Jarak SL</b><span class="v">${fmt(Math.abs(P.entry-P.sl),ref)}</span></div>`;
-  } else { plan.hidden=true; plan.innerHTML=''; }
-  const ck = (title, S) => `<div><h3>${title}</h3><ul>${S.checks.map(x=>`<li class="${x.ok?'ok':'no'}"><span class="mark">${x.ok?'✓':'·'}</span><span>${esc(x.k)}${x.opt?' <span class="opt">(tambahan)</span>':''}</span></li>`).join('')}</ul></div>`;
-  $('checks').innerHTML = ck('Syarat BUY', A.buy) + ck('Syarat SELL', A.sell);
+  renderSignal(A);
+  renderPanes(A);
+  drawChart();
+  handleStatus(A);
+}
 
-  $('dirBox').innerHTML = `
-    <dt>H4</dt><dd>${tagDir(A.dir.H4.dir)}</dd>
-    <dt>H1</dt><dd>${tagDir(A.dir.H1.dir)}</dd>
-    <dt>M15</dt><dd>${tagDir(A.dir.M15.dir)}</dd>
-    <dt>Regime</dt><dd>${esc(A.regime)}</dd>
-    <dt>Struktur M5</dt><dd>${A.lastEv ? `${A.lastEv.type} ${A.lastEv.dir>0?'naik':'turun'} @ <span class="num">${fmt(A.lastEv.lvl,ref)}</span>` : '—'}</dd>
-    <dt>ATR M15</dt><dd class="num">${fmt(A.atr15,ref)}</dd>`;
+function renderSignal(A){
+  const E = A.ea, L = E && E.latest, ref = A.price, o = offset;
+  const chip = $('chip'), dirEl = $('sigDir'), lv = $('levels'), seg = $('confSeg');
+  if(!L){
+    chip.className='chip WAIT'; chip.textContent='TIADA SIGNAL';
+    dirEl.className='sig-dir NONE'; dirEl.textContent='TIADA SIGNAL';
+    $('sigLabel').textContent=''; $('sigTrig').textContent='Menunggu trigger pada candle M5 seterusnya.'; $('sigAge').textContent='';
+    lv.hidden=true; $('confN').textContent='—'; seg.className='seg'; [...seg.children].forEach(i=>i.className='');
+    $('smcState').textContent=''; $('simNote').textContent=''; return;
+  }
+  const d = L.dir>0 ? 'BUY' : 'SELL', ago = Math.round((E.lastT - L.t)/300), P = L.plan;
+  chip.className='chip '+d; chip.textContent=d;
+  dirEl.className='sig-dir '+d; dirEl.textContent=d;
+  $('sigLabel').textContent = E.fresh ? 'SIGNAL BARU' : 'SIGNAL TERKINI';
+  $('sigTrig').textContent = L.trig;
+  $('sigAge').textContent = fmtT(L.t+300) + (ago===0 ? ' · candle terakhir' : ` · ${ago} candle lalu`);
+  const rr = x => (Math.abs(x-P.entry)/P.risk).toFixed(1)+'R';
+  const tag = o ? ' (broker)' : '';
+  lv.hidden=false;
+  lv.innerHTML = `
+    <div class="lv"><span class="k">Entry${tag}</span><span class="v">${fmt(P.entry+o,ref)}</span><span class="r"></span></div>
+    <div class="lv sl"><span class="k">Stop loss</span><span class="v">${fmt(P.sl+o,ref)}</span><span class="r">${fmt(P.risk,ref)}</span></div>
+    <div class="lv tp"><span class="k">TP1 · 90%</span><span class="v">${fmt(P.tp1+o,ref)}</span><span class="r">${rr(P.tp1)}</span></div>
+    <div class="lv tp"><span class="k">TP2</span><span class="v">${fmt(P.tp2+o,ref)}</span><span class="r">${rr(P.tp2)}</span></div>`;
+  const S = L.dir>0 ? A.buy : A.sell, n = S.score;
+  $('confN').textContent = n + ' / 6';
+  seg.className = 'seg ' + d; [...seg.children].forEach((i,k)=> i.className = k < n ? 'on' : '');
+  $('smcState').textContent = A.status === d ? 'Analisis SMC juga beri ' + d + '. Isyarat lebih kukuh.'
+    : A.status === 'WAIT' ? 'Analisis SMC: WAIT (belum semua syarat dipenuhi).' : 'Analisis SMC menunjukkan ' + A.status + '. Berhati-hati, arah bercanggah.';
+  const done = E.trades, win = done.filter(t=>t.R>0).length, sumR = done.reduce((a,t)=>a+t.R,0);
+  $('simNote').textContent = done.length ? `Simulasi ~${Math.max(1,Math.round((E.lastT-E.from)/86400))} hari: menang ${win}/${done.length}, jumlah ${sumR>=0?'+':''}${sumR.toFixed(1)}R (lihat tab Simulasi).` : '';
+}
 
-  const R=A.range, pos=Math.max(0,Math.min(1,R.pos));
-  $('pdBox').innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
-      <span class="tag ${R.zone==='Premium'?'dn':R.zone==='Discount'?'up':'mix'}">${R.zone}</span>
-      <span class="num" style="color:var(--muted)">${(pos*100).toFixed(0)}% dari bawah julat</span>
-    </div>
-    <div class="pd"><div class="eq"></div><div class="pt" style="left:${(pos*100).toFixed(1)}%"></div></div>
-    <div class="pd-labels"><span>Discount</span><span>EQ 50%</span><span>Premium</span></div>
-    <dl class="kv" style="margin-top:10px">
-      <dt>Julat atas</dt><dd class="num">${fmt(R.hi,ref)}</dd>
-      <dt>EQ 50%</dt><dd class="num">${fmt(R.eq,ref)}</dd>
-      <dt>Julat bawah</dt><dd class="num">${fmt(R.lo,ref)}</dd>
-    </dl>`;
+function renderPanes(A){
+  const ref = A.price, o = offset;
+  const ck = (title, S) => `<div><h3>${title} <span class="small muted">${S.score}/6</span></h3><ul class="checks">${S.checks.map(x=>`<li class="${x.ok?'ok':'no'}"><span class="mk">${x.ok?'✓':'·'}</span><span>${esc(x.k)}${x.opt?' <span class="small muted">(tambahan)</span>':''}</span></li>`).join('')}</ul></div>`;
+  let smcPlan = '';
+  if(A.side && A.side.plan){ const P=A.side.plan;
+    smcPlan = `<div><h3>Pelan SMC (${A.status})</h3><dl class="kv"><dt>Entry</dt><dd class="num">${fmt(P.entry+o,ref)}</dd><dt>SL</dt><dd class="num neg">${fmt(P.sl+o,ref)}</dd><dt>TP1</dt><dd class="num pos">${fmt(P.tp1+o,ref)}</dd><dt>TP2</dt><dd class="num pos">${fmt(P.tp2+o,ref)}</dd><dt>R:R</dt><dd class="num">1 : ${P.rr.toFixed(1)}</dd></dl></div>`; }
+  $('checks').innerHTML = `<div><h3>Status SMC</h3><span class="chip ${A.status}">${A.status}</span></div>` + ck('Syarat BUY', A.buy) + ck('Syarat SELL', A.sell) + smcPlan;
 
   $('liqBody').innerHTML = A.liq.length ? A.liq.map(L=>`<tr>
-      <td>${esc(L.name)} <span class="opt">${L.k}</span></td>
+      <td>${L.k} <span class="small muted">${esc(L.name)}</span></td>
       <td class="num">${fmt(L.p,ref)}</td>
       <td>${L.taken?'Ya':'Tidak'}</td>
       <td class="num">${L.firstT?fmtT(L.firstT):'—'}</td>
@@ -727,48 +484,38 @@ function render(A){
       <td class="num">${p.dist===0?'Dalam zon':(p.dist>0?'+':'')+fmt(p.dist,ref)}${p.near?' · dekat':''}</td></tr>`).join('')
     : '<tr><td colspan="4">Tiada POI aktif.</td></tr>';
 
-  renderEA(A);
-  drawChart();
-  handleStatus(A);
-}
+  $('dirBox').innerHTML = `
+    <dt>H4</dt><dd>${tagDir(A.dir.H4.dir)}</dd>
+    <dt>H1</dt><dd>${tagDir(A.dir.H1.dir)}</dd>
+    <dt>M15</dt><dd>${tagDir(A.dir.M15.dir)}</dd>
+    <dt>Regime</dt><dd>${esc(A.regime)}</dd>
+    <dt>Struktur M5</dt><dd>${A.lastEv ? `${A.lastEv.type} ${A.lastEv.dir>0?'naik':'turun'} @ <span class="num">${fmt(A.lastEv.lvl,ref)}</span>` : '—'}</dd>
+    <dt>ATR M15</dt><dd class="num">${fmt(A.atr15,ref)}</dd>`;
+  const R=A.range, pos=Math.max(0,Math.min(1,R.pos));
+  $('pdBox').innerHTML = `
+    <div style="display:flex;justify-content:space-between;gap:10px"><span class="tag ${R.zone==='Premium'?'dn':R.zone==='Discount'?'up':'mix'}">${R.zone}</span><span class="small muted num">${(pos*100).toFixed(0)}% dari bawah julat H1</span></div>
+    <div class="pd"><div class="eq"></div><div class="pt" style="left:${(pos*100).toFixed(1)}%"></div></div>
+    <div class="pd-l"><span>Discount ${fmt(R.lo,ref)}</span><span>EQ ${fmt(R.eq,ref)}</span><span>Premium ${fmt(R.hi,ref)}</span></div>`;
 
-function renderEA(A){
-  const E = A.ea, ref = A.price, o = offset, tag = o ? ' (broker)' : '';
-  const chip = $('eaChip'), plan = $('eaPlan');
-  if(!E){ chip.className='chip OFF'; chip.textContent='TIADA DATA'; return; }
-  const planHtml = (P, extra) => `<div><b>Entry${tag}</b><span class="v">${fmt(P.entry+o,ref)}</span></div>
-      <div><b>SL${P.tp1Hit?' (dialih)':''}${tag}</b><span class="v" style="color:var(--sell)">${fmt(P.sl+o,ref)}</span></div>
-      <div><b>TP1 3R · tutup 90%${tag}</b><span class="v" style="color:var(--buy)">${fmt(P.tp1+o,ref)}</span></div>
-      <div><b>TP2${tag}</b><span class="v" style="color:var(--buy)">${fmt(P.tp2+o,ref)}</span></div>
-      <div><b>Jarak SL</b><span class="v">${fmt(P.risk,ref)}</span></div>${extra||''}`;
-  const L = E.latest;
-  if(L){
-    const d = L.dir>0 ? 'BUY' : 'SELL', ago = Math.round((E.lastT - L.t)/300);
-    chip.className='chip '+d; chip.textContent = (E.fresh ? 'SIGNAL BARU ' : 'SIGNAL TERKINI ') + d;
-    const posTxt = E.pos ? ` · simulasi: trade ${E.pos.dir>0?'BUY':'SELL'} ${E.pos.tp1Hit?'(TP1 sudah kena)':'aktif'}` : '';
-    $('eaInfo').textContent = `${fmtT(L.t+300)} · ${ago===0 ? 'candle terakhir' : ago+' candle lalu'} · trigger: ${L.trig}${posTxt}`;
-    plan.hidden=false; plan.innerHTML = planHtml(L.plan);
-  } else {
-    chip.className='chip OFF'; chip.textContent='TIADA SIGNAL';
-    $('eaInfo').textContent = 'Menunggu trigger pada candle M5 seterusnya.';
-    plan.hidden=true; plan.innerHTML='';
+  const E = A.ea;
+  if(E){
+    const done = E.trades, win = done.filter(t=>t.R>0).length, sumR = done.reduce((a,t)=>a+t.R,0);
+    const days = Math.max(1, Math.round((E.lastT - E.from)/86400));
+    $('eaStats').textContent = done.length
+      ? `${done.length} trade selesai dalam ~${days} hari · menang ${win}/${done.length} (${Math.round(win/done.length*100)}%) · jumlah ${sumR>=0?'+':''}${sumR.toFixed(1)}R. Signal bertentangan = pusing arah. Sampel kecil, rujukan sahaja.`
+      : `Tiada trade selesai dalam ~${days} hari data terakhir.`;
+    const rows = [...(E.pos?[E.pos]:[]), ...done.slice().reverse()].slice(0,20);
+    $('eaBody').innerHTML = rows.length ? rows.map(t=>`<tr>
+        <td class="num">${fmtT(t.t+300)}</td>
+        <td><span class="tag ${t.dir>0?'up':'dn'}">${t.dir>0?'BUY':'SELL'}</span></td>
+        <td>${esc(t.trig||'')}</td>
+        <td class="num">${fmt(t.entry+o,ref)}</td>
+        <td class="num">${fmt(t.sl0+o,ref)}</td>
+        <td class="num">${fmt(t.tp1+o,ref)} / ${fmt(t.tp2+o,ref)}</td>
+        <td>${t.closed ? esc(t.res) : 'Aktif'}</td>
+        <td class="num ${t.closed ? (t.R>0?'pos':'neg') : ''}">${t.closed ? (t.R>=0?'+':'')+t.R.toFixed(2) : '—'}</td></tr>`).join('')
+      : '<tr><td colspan="8">Belum ada signal dalam tempoh data.</td></tr>';
   }
-  const done = E.trades, win = done.filter(t=>t.R>0).length, sumR = done.reduce((a,t)=>a+t.R,0);
-  const days = Math.max(1, Math.round((E.lastT - E.from)/86400));
-  $('eaStats').textContent = done.length
-    ? `${done.length} trade selesai dalam ~${days} hari · menang ${win}/${done.length} (${Math.round(win/done.length*100)}%) · jumlah ${sumR>=0?'+':''}${sumR.toFixed(1)}R. Sampel kecil, untuk rujukan sahaja.`
-    : `Tiada trade selesai dalam ~${days} hari data terakhir.`;
-  const rows = [...(E.pos?[E.pos]:[]), ...done.slice().reverse()].slice(0,12);
-  $('eaBody').innerHTML = rows.length ? rows.map(t=>`<tr>
-      <td class="num">${fmtT(t.t+300)}</td>
-      <td><span class="tag ${t.dir>0?'up':'dn'}">${t.dir>0?'BUY':'SELL'}</span></td>
-      <td>${esc(t.trig)}</td>
-      <td class="num">${fmt(t.entry+o,ref)}</td>
-      <td class="num">${fmt(t.sl0+o,ref)}</td>
-      <td class="num">${fmt(t.tp1+o,ref)} / ${fmt(t.tp2+o,ref)}</td>
-      <td>${t.closed ? esc(t.res) : 'Aktif'}</td>
-      <td class="num ${t.closed ? (t.R>0?'res-win':'res-loss') : ''}">${t.closed ? (t.R>=0?'+':'')+t.R.toFixed(2) : '—'}</td></tr>`).join('')
-    : '<tr><td colspan="8">Belum ada signal dalam tempoh data.</td></tr>';
 }
 
 // ---------- Chart ----------
@@ -780,41 +527,11 @@ function initChart(){
     autoSize:true,
     layout:{background:{type:'solid',color:css('--panel')}, textColor:css('--muted'), fontFamily:'JetBrains Mono, monospace', fontSize:11},
     grid:{vertLines:{color:css('--line')}, horzLines:{color:css('--line')}},
-    rightPriceScale:{borderColor:css('--line')}, timeScale:{borderColor:css('--line'), timeVisible:true, secondsVisible:false},
+    rightPriceScale:{borderColor:css('--line')}, timeScale:{borderColor:css('--line'), timeVisible:true, secondsVisible:false, rightOffset:4},
     crosshair:{mode:0}
   });
   series = chart.addCandlestickSeries({upColor:css('--buy'),downColor:css('--sell'),borderUpColor:css('--buy'),borderDownColor:css('--sell'),wickUpColor:css('--buy'),wickDownColor:css('--sell')});
 }
-function drawChart(){
-  if(!lastData || !lastA) return;
-  initChart(); if(!series){ $('chart').innerHTML='<div class="why" style="padding:20px">Chart tidak dapat dimuatkan. Analisis di bawah tetap berfungsi.</div>'; return; }
-  const off = -new Date().getTimezoneOffset()*60;
-  const bars = lastData.ALL[chartTf].slice(-250);
-  const ref = lastA.price, prec = dp(ref);
-  series.applyOptions({priceFormat:{type:'price',precision:prec,minMove:Math.pow(10,-prec)}});
-  series.setData(bars.map(b=>({time:b.t+off, open:b.o, high:b.h, low:b.l, close:b.c})));
-  plines.forEach(l=>series.removePriceLine(l)); plines=[];
-  const add=(price,color,title,style=0,w=1)=>{ if(price==null||!isFinite(price)) return; plines.push(series.createPriceLine({price,color,lineWidth:w,lineStyle:style,axisLabelVisible:true,title})); };
-  const R=lastA.range;
-  add(R.hi, css('--sell'), 'Premium', 0, 2); add(R.eq, css('--eq'), 'EQ', 2); add(R.lo, css('--buy'), 'Discount', 0, 2);
-  lastA.liq.forEach(L=>add(L.p, '#c792ea', L.k, 3));
-  if(lastA.side && lastA.side.plan){ const P=lastA.side.plan;
-    add(P.entry, css('--accent'), 'Entry', 0, 2); add(P.sl, css('--sell'), 'SL', 2, 2); add(P.tp1, css('--buy'), 'TP1', 2); add(P.tp2, css('--buy'), 'TP2', 2, 2); }
-  const E = lastA.ea;
-  if(E){
-    const P = E.latest ? E.latest.plan : null;
-    if(P){ add(P.entry, '#f0c674', 'EA Entry', 0, 2); add(P.sl, css('--sell'), 'EA SL', 2, 2); add(P.tp1, css('--buy'), 'EA TP1', 2); add(P.tp2, css('--buy'), 'EA TP2', 2); }
-    const first = bars.length ? bars[0].t : 0, seen = new Set();
-    const marks = [...E.trades, ...(E.pos?[E.pos]:[])].filter(t=>t.t>=first).map(t=>({
-      time: barStart(chartTf, t.t) + off, position: t.dir>0 ? 'belowBar' : 'aboveBar',
-      color: t.dir>0 ? css('--buy') : css('--sell'), shape: t.dir>0 ? 'arrowUp' : 'arrowDown', text: 'EA' }))
-      .sort((a,b)=>a.time-b.time).filter(m=>{ const k=m.time+':'+m.shape; if(seen.has(k)) return false; seen.add(k); return true; });
-    try{ series.setMarkers(marks); }catch(e){}
-  }
-  chart.timeScale().scrollToRealTime();
-}
-
-// W1 dibina dari D1 (minggu bermula Isnin 00:00 UTC)
 function weekStart(t){ const day=(new Date(t*1000).getUTCDay()+6)%7; return Math.floor(t/86400)*86400 - day*86400; }
 function barStart(tfName, t){ return tfName==='W1' ? weekStart(t) : Math.floor(t/TFSEC[tfName])*TFSEC[tfName]; }
 function weekly(d1){
@@ -822,7 +539,32 @@ function weekly(d1){
     if(w && w.t===ws){ w.h=Math.max(w.h,b.h); w.l=Math.min(w.l,b.l); w.c=b.c; } else out.push({t:ws,o:b.o,h:b.h,l:b.l,c:b.c}); }
   return out;
 }
-// Candle terakhir bergerak ikut tick (paparan sahaja; analisis tetap guna bar tertutup)
+function drawChart(){
+  if(!lastData || !lastA) return;
+  initChart(); if(!series){ $('chart').innerHTML='<div class="small muted" style="padding:20px">Chart tidak dapat dimuatkan. Analisis tetap berfungsi.</div>'; return; }
+  const off = -new Date().getTimezoneOffset()*60;
+  const bars = (lastData.ALL[chartTf]||[]).slice(-250);
+  const ref = lastA.price, prec = dp(ref);
+  series.applyOptions({priceFormat:{type:'price',precision:prec,minMove:Math.pow(10,-prec)}});
+  series.setData(bars.map(b=>({time:b.t+off, open:b.o, high:b.h, low:b.l, close:b.c})));
+  plines.forEach(l=>series.removePriceLine(l)); plines=[];
+  const add=(price,color,title,style=0,w=1)=>{ if(price==null||!isFinite(price)) return; plines.push(series.createPriceLine({price,color,lineWidth:w,lineStyle:style,axisLabelVisible:true,title})); };
+  const R=lastA.range;
+  add(R.hi, css('--sell'), 'Premium', 0, 1); add(R.eq, css('--eq'), 'EQ', 2); add(R.lo, css('--buy'), 'Discount', 0, 1);
+  lastA.liq.forEach(L=>add(L.p, css('--liq'), L.k, 3));
+  const E = lastA.ea;
+  if(E && E.latest){
+    const P = E.latest.plan;
+    add(P.entry, '#f0c674', 'Entry', 0, 2); add(P.sl, css('--sell'), 'SL', 2, 2); add(P.tp1, css('--buy'), 'TP1', 2); add(P.tp2, css('--buy'), 'TP2', 2, 2);
+    const first = bars.length ? bars[0].t : 0, seen = new Set();
+    const marks = [...E.trades, ...(E.pos?[E.pos]:[])].filter(t=>t.t>=first).map(t=>({
+      time: barStart(chartTf, t.t) + off, position: t.dir>0 ? 'belowBar' : 'aboveBar',
+      color: t.dir>0 ? css('--buy') : css('--sell'), shape: t.dir>0 ? 'arrowUp' : 'arrowDown', text: '' }))
+      .sort((a,b)=>a.time-b.time).filter(m=>{ const k=m.time+':'+m.shape; if(seen.has(k)) return false; seen.add(k); return true; });
+    try{ series.setMarkers(marks); }catch(e){}
+  } else { try{ series.setMarkers([]); }catch(e){} }
+  chart.timeScale().scrollToRealTime();
+}
 function liveCandle(epoch, px){
   if(!series || !lastData || !isFinite(px) || !epoch) return;
   const arr = lastData.ALL[chartTf]; if(!arr || !arr.length) return;
@@ -836,41 +578,32 @@ function liveCandle(epoch, px){
 
 // ---------- Amaran ----------
 let audioCtx=null;
-function beep(){ try{ audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
-  [0,0.18].forEach(d=>{ const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.frequency.value=880; g.gain.value=0.15;
-    o.connect(g); g.connect(audioCtx.destination); o.start(audioCtx.currentTime+d); o.stop(audioCtx.currentTime+d+0.12); }); }catch(e){} }
-function pushLog(text){
-  logItems.unshift({t:Date.now(), text}); logItems.splice(30); store.set('log', logItems); renderLog();
-}
+function beep(n=2){ try{ audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
+  for(let k=0;k<n;k++){ const o=audioCtx.createOscillator(), g=audioCtx.createGain(), t0=audioCtx.currentTime+k*0.2;
+    o.frequency.value=880; g.gain.value=0.15; o.connect(g); g.connect(audioCtx.destination); o.start(t0); o.stop(t0+0.12); } }catch(e){} }
+function pushLog(text){ logItems.unshift({t:Date.now(), text}); logItems.splice(40); store.set('log', logItems); renderLog(); }
 function renderLog(){
   $('log').innerHTML = logItems.length ? logItems.map(x=>`<li><time>${new Date(x.t).toLocaleString('ms-MY',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:false})}</time><span>${esc(x.text)}</span></li>`).join('')
-    : '<li><time>—</time><span>Belum ada perubahan status.</span></li>';
+    : '<li><time>—</time><span>Belum ada signal baru sejak dashboard dibuka.</span></li>';
+}
+function notify(title, body, n){
+  if(!alertsOn) return;
+  beep(n); if(navigator.vibrate) navigator.vibrate(n>2 ? [300,100,300,100,300] : [300,100,300]);
+  try{ if('Notification' in window && Notification.permission==='granted') new Notification(title, {body, icon:'icon-192.png'}); }catch(e){}
 }
 function handleStatus(A){
-  const key = A.status;
-  if(lastStatus !== null && key !== lastStatus){
-    let msg = `${symLabel(sym)}: ${lastStatus} → ${key}`;
-    if(A.side && A.side.plan){ const P=A.side.plan, r=A.price, o=offset; msg += ` | Entry ${fmt(P.entry+o,r)} SL ${fmt(P.sl+o,r)} TP1 ${fmt(P.tp1+o,r)} TP2 ${fmt(P.tp2+o,r)}${o?' (harga broker)':''}`; }
-    pushLog(msg);
-    if(alertsOn && key!=='WAIT'){
-      beep(); if(navigator.vibrate) navigator.vibrate([200,100,200]);
-      try{ if('Notification' in window && Notification.permission==='granted') new Notification('Signal '+key, {body:msg}); }catch(e){}
-    }
-  }
-  lastStatus = key; store.set('lastStatus_'+sym, key);
+  if(lastStatus !== null && A.status !== lastStatus) pushLog(`${symLabel(sym)} SMC: ${lastStatus} → ${A.status}`);
+  lastStatus = A.status; store.set('lastStatus_'+sym, A.status);
   const E = A.ea;
   if(E && E.fresh){
     const k = E.fresh.t + ':' + E.fresh.dir;
-    const recent = nowSrv() - (E.fresh.t + 300) < 900;
     if(k !== store.get('lastEa_'+sym, null)){
       const prevDir = store.get('lastEaDir_'+sym, 0);
       store.set('lastEa_'+sym, k); store.set('lastEaDir_'+sym, E.fresh.dir);
-      if(recent){
+      if(nowSrv() - (E.fresh.t + 300) < 900){
         const P = E.fresh.plan, r = A.price, o = offset, d = E.fresh.dir>0 ? 'BUY' : 'SELL', flip = prevDir && prevDir !== E.fresh.dir;
-        const msg = `${symLabel(sym)} ${flip ? 'PUSING ARAH → ' : 'SIGNAL '}${d} [${E.fresh.trig}] | Entry ${fmt(P.entry+o,r)} SL ${fmt(P.sl+o,r)} TP1 ${fmt(P.tp1+o,r)} TP2 ${fmt(P.tp2+o,r)}${o?' (harga broker)':''}`;
-        pushLog(msg);
-        if(alertsOn){ beep(); if(flip){ setTimeout(beep, 450); } if(navigator.vibrate) navigator.vibrate(flip ? [300,100,300,100,300] : [300,100,300]);
-          try{ if('Notification' in window && Notification.permission==='granted') new Notification((flip?'Pusing arah: ':'Signal ')+d, {body:msg}); }catch(e){} }
+        const msg = `${symLabel(sym)} ${flip ? 'PUSING ARAH → ' : ''}${d} [${E.fresh.trig}] Entry ${fmt(P.entry+o,r)} SL ${fmt(P.sl+o,r)} TP1 ${fmt(P.tp1+o,r)} TP2 ${fmt(P.tp2+o,r)}${o?' (broker)':''}`;
+        pushLog(msg); notify((flip?'Pusing arah: ':'Signal ')+d, msg, flip?3:2);
       }
     }
   }
@@ -880,34 +613,71 @@ function handleStatus(A){
 function selectSym(s){
   sym=s; store.set('sym',s); lastStatus=store.get('lastStatus_'+s,null); livePrice=null; lastA=null; lastData=null;
   offset = +store.get('off_'+s, 0) || 0; $('offIn').value = offset;
-  $('chip').className='chip OFF'; $('chip').textContent='MEMUAT'; $('price').textContent='—';
+  $('chip').className='chip'; $('chip').textContent='MEMUAT'; $('price').textContent='—'; $('qSym').textContent=symLabel(s)+' · Deriv';
   subscribeTicks().then(refresh);
 }
 const symSel=$('symSel');
-if([...symSel.options].some(o=>o.value===sym)) symSel.value=sym; else { symSel.value='custom'; $('symCustom').hidden=false; $('symCustom').value=sym; }
-symSel.addEventListener('change',()=>{ if(symSel.value==='custom'){ $('symCustom').hidden=false; $('symCustom').focus(); } else { $('symCustom').hidden=true; selectSym(symSel.value); } });
+if([...symSel.options].some(o=>o.value===sym)) symSel.value=sym; else { symSel.value='custom'; $('customRow').hidden=false; $('symCustom').value=sym; }
+symSel.addEventListener('change',()=>{
+  if(symSel.value==='custom'){ $('settings').hidden=false; $('btnSet').setAttribute('aria-expanded','true'); $('customRow').hidden=false; $('symCustom').focus(); }
+  else { $('customRow').hidden=true; selectSym(symSel.value); }
+});
 $('symCustom').addEventListener('keydown',e=>{ if(e.key==='Enter' && e.target.value.trim()) selectSym(e.target.value.trim()); });
+$('btnSet').addEventListener('click',()=>{ const s=$('settings'); s.hidden=!s.hidden; $('btnSet').setAttribute('aria-expanded', String(!s.hidden)); });
 document.querySelectorAll('#tfTabs button').forEach(b=>{
   b.classList.toggle('act', b.dataset.tf===chartTf);
   b.addEventListener('click',()=>{ chartTf=b.dataset.tf; store.set('tf',chartTf); document.querySelectorAll('#tfTabs button').forEach(x=>x.classList.toggle('act',x===b)); drawChart(); });
 });
+function showTab(t){
+  curTab=t; store.set('tab',t);
+  document.querySelectorAll('#tabNav button').forEach(b=>b.classList.toggle('act', b.dataset.tab===t));
+  document.querySelectorAll('.tabpane').forEach(p=>{ p.hidden = p.dataset.pane!==t; });
+}
+document.querySelectorAll('#tabNav button').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
+showTab(curTab);
 $('btnAlert').addEventListener('click', async ()=>{
-  alertsOn=!alertsOn; $('btnAlert').classList.toggle('on',alertsOn); $('btnAlert').textContent = alertsOn ? 'Amaran: hidup' : 'Hidupkan amaran';
-  if(alertsOn){ beep(); try{ if('Notification' in window && Notification.permission==='default') await Notification.requestPermission(); }catch(e){} }
+  alertsOn=!alertsOn; $('btnAlert').classList.toggle('on',alertsOn); $('alertLbl').textContent = alertsOn ? 'Amaran on' : 'Amaran off';
+  if(alertsOn){ beep(1); try{ if('Notification' in window && Notification.permission==='default') await Notification.requestPermission(); }catch(e){} }
 });
 $('btnWake').addEventListener('click', async ()=>{
   try{
-    if(wakeLock){ await wakeLock.release(); wakeLock=null; $('btnWake').classList.remove('on'); $('btnWake').textContent='Skrin kekal hidup'; return; }
+    if(wakeLock){ await wakeLock.release(); wakeLock=null; return; }
     wakeLock = await navigator.wakeLock.request('screen'); $('btnWake').classList.add('on'); $('btnWake').textContent='Skrin: kekal hidup';
     wakeLock.addEventListener('release',()=>{ wakeLock=null; $('btnWake').classList.remove('on'); $('btnWake').textContent='Skrin kekal hidup'; });
   }catch(e){ $('btnWake').textContent='Tidak disokong'; }
 });
+$('offIn').value = offset;
+$('offIn').addEventListener('input', e=>{ const v=parseFloat(e.target.value); offset = isFinite(v) ? v : 0; store.set('off_'+sym, offset); renderPrice(); if(lastA){ renderSignal(lastA); renderPanes(lastA); } });
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') refresh(); });
 
-$('offIn').value = offset;
-$('offIn').addEventListener('input', e=>{ const v=parseFloat(e.target.value); offset = isFinite(v) ? v : 0; store.set('off_'+sym, offset); renderPrice(); if(lastA) render(lastA); });
 renderLog();
 start();
+
+// ---------- Notifikasi latar belakang (Web Push) ----------
+const VAPID_PUBLIC = 'BHCXo1QEsFGjJK7op_zETF-Cka01bDyWWbR5DpLn9a6V7JVqfBf3pgU_1xOicefPT2PuFi8KqDHCyibleRO4CtY';
+function b64u(s){ const pad='='.repeat((4-s.length%4)%4), b=atob((s+pad).replace(/-/g,'+').replace(/_/g,'/')); return Uint8Array.from(b,c=>c.charCodeAt(0)); }
+const pushMsg = (t, err) => { const m=$('pushMsg'); m.textContent=t; m.style.color = err ? 'var(--sell)' : 'var(--buy)'; };
+$('btnPush').addEventListener('click', async ()=>{
+  try{
+    if(location.protocol!=='https:') return pushMsg('Buka dashboard melalui link GitHub Pages (https) untuk aktifkan.', true);
+    if(!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window))
+      return pushMsg('Browser ini tidak menyokong. iPhone: pasang dahulu melalui Safari → Share → Add to Home Screen, kemudian buka dari ikon itu.', true);
+    const perm = await Notification.requestPermission();
+    if(perm!=='granted') return pushMsg('Kebenaran notifikasi ditolak. Benarkan notifikasi untuk app ini dalam tetapan phone.', true);
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if(!sub) sub = await reg.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:b64u(VAPID_PUBLIC)});
+    $('pushSub').value = JSON.stringify(sub); $('pushOut').hidden = false;
+    pushMsg('Diaktifkan. Langkah seterusnya: salin kod dan simpan di GitHub.');
+  }catch(e){ pushMsg('Gagal aktifkan: ' + e.message, true); }
+});
+$('btnCopy').addEventListener('click', async ()=>{
+  const t=$('pushSub');
+  try{ await navigator.clipboard.writeText(t.value); $('btnCopy').textContent='Disalin ✓'; }
+  catch(e){ t.focus(); t.select(); $('btnCopy').textContent='Tekan lama & salin'; }
+  setTimeout(()=>{ $('btnCopy').textContent='Salin kod'; }, 2500);
+});
+
 // ---------- App (PWA) ----------
 if('serviceWorker' in navigator && location.protocol==='https:'){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
 let installEvt=null;
