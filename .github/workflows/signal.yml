@@ -1,0 +1,50 @@
+yaml
+name: Waddey FX signal
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+    inputs:
+      test:
+        description: 'Hantar notifikasi ujian sahaja'
+        type: boolean
+        default: false
+
+concurrency:
+  group: waddeyfx-signal
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Pulihkan rekod signal terakhir
+        uses: actions/cache/restore@v4
+        with:
+          path: notifier/state.json
+          key: state-${{ github.run_id }}
+          restore-keys: state-
+      - name: Pasang web-push
+        working-directory: notifier
+        run: npm install --no-audit --no-fund --silent
+      - name: Semak signal & hantar notifikasi
+        working-directory: notifier
+        env:
+          PUSH_SUB: ${{ secrets.PUSH_SUB }}
+          VAPID_PRIVATE: ${{ secrets.VAPID_PRIVATE }}
+          SYMBOL: ${{ vars.SYMBOL }}
+          BROKER_OFFSET: ${{ vars.BROKER_OFFSET }}
+          TEST: ${{ inputs.test }}
+        run: node run.js
+      - name: Simpan rekod signal terakhir
+        if: always() && hashFiles('notifier/state.json') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: notifier/state.json
+          key: state-${{ github.run_id }}
