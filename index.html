@@ -658,18 +658,26 @@ const VAPID_PUBLIC = 'BHCXo1QEsFGjJK7op_zETF-Cka01bDyWWbR5DpLn9a6V7JVqfBf3pgU_1x
 function b64u(s){ const pad='='.repeat((4-s.length%4)%4), b=atob((s+pad).replace(/-/g,'+').replace(/_/g,'/')); return Uint8Array.from(b,c=>c.charCodeAt(0)); }
 const pushMsg = (t, err) => { const m=$('pushMsg'); m.textContent=t; m.style.color = err ? 'var(--sell)' : 'var(--buy)'; };
 $('btnPush').addEventListener('click', async ()=>{
+  const withTimeout = (pr, ms, msg) => Promise.race([pr, new Promise((_,rej)=>setTimeout(()=>rej(new Error(msg)), ms))]);
   try{
-    if(location.protocol!=='https:') return pushMsg('Buka dashboard melalui link GitHub Pages (https) untuk aktifkan.', true);
-    if(!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window))
-      return pushMsg('Browser ini tidak menyokong. iPhone: pasang dahulu melalui Safari → Share → Add to Home Screen, kemudian buka dari ikon itu.', true);
+    pushMsg('Langkah 1/4: menyemak phone…');
+    if(location.protocol!=='https:') return pushMsg('Buka melalui link https://ajwadzaidi69.github.io/WADDEYFX/ (bukan fail dari folder).', true);
+    if(!('serviceWorker' in navigator)) return pushMsg('Browser ini tidak menyokong. Buka link dalam Google Chrome (bukan dari dalam WhatsApp/Telegram/Facebook).', true);
+    if(!('PushManager' in window) || !('Notification' in window))
+      return pushMsg('Browser ini tidak menyokong notifikasi. Android: guna Google Chrome. iPhone: pasang dahulu melalui Safari → Share → Add to Home Screen, kemudian buka dari ikon itu.', true);
+    pushMsg('Langkah 2/4: meminta kebenaran notifikasi…');
     const perm = await Notification.requestPermission();
-    if(perm!=='granted') return pushMsg('Kebenaran notifikasi ditolak. Benarkan notifikasi untuk app ini dalam tetapan phone.', true);
-    const reg = await navigator.serviceWorker.ready;
+    if(perm!=='granted') return pushMsg('Kebenaran notifikasi ditolak. Pergi ke Tetapan phone → Apps → Chrome → Notifications → benarkan, kemudian cuba lagi.', true);
+    pushMsg('Langkah 3/4: menyediakan app…');
+    let reg = await navigator.serviceWorker.getRegistration();
+    if(!reg) reg = await navigator.serviceWorker.register('sw.js');
+    reg = await withTimeout(navigator.serviceWorker.ready, 15000, 'Fail sw.js tidak dijumpai. Pastikan sw.js sudah di-upload ke GitHub, kemudian tutup dan buka semula halaman.');
+    pushMsg('Langkah 4/4: menjana kod…');
     let sub = await reg.pushManager.getSubscription();
-    if(!sub) sub = await reg.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:b64u(VAPID_PUBLIC)});
+    if(!sub) sub = await withTimeout(reg.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:b64u(VAPID_PUBLIC)}), 20000, 'Server notifikasi Google tidak menjawab. Semak internet dan cuba lagi.');
     $('pushSub').value = JSON.stringify(sub); $('pushOut').hidden = false;
-    pushMsg('Diaktifkan. Langkah seterusnya: salin kod dan simpan di GitHub.');
-  }catch(e){ pushMsg('Gagal aktifkan: ' + e.message, true); }
+    pushMsg('Berjaya. Salin kod di atas dan simpan di GitHub sebagai PUSH_SUB.');
+  }catch(e){ pushMsg('Gagal: ' + e.message + ' (Kalau guna browser selain Google Chrome, cuba dalam Chrome.)', true); }
 });
 $('btnCopy').addEventListener('click', async ()=>{
   const t=$('pushSub');
