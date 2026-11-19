@@ -1,0 +1,36 @@
+name: Waddey Berita Ekonomi
+
+on:
+  schedule:
+    - cron: '17 */3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: waddey-news
+  cancel-in-progress: true
+
+jobs:
+  news:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Ambil kalendar ekonomi
+        run: node notifier/sz-news.js
+      - name: Simpan jika berubah
+        run: |
+          if [ -n "$(git status --porcelain signalzone/news.json)" ]; then
+            git config user.name "waddey-bot"
+            git config user.email "waddey-bot@users.noreply.github.com"
+            git add signalzone/news.json
+            git commit -m "Kemas kini berita ekonomi"
+            git push
+          else
+            echo "Tiada perubahan"
+          fi

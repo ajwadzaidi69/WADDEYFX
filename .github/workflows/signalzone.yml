@@ -1,0 +1,54 @@
+name: Waddey Signal Zone
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+    inputs:
+      test:
+        description: 'Hantar notifikasi ujian sahaja'
+        type: boolean
+        default: false
+
+concurrency:
+  group: waddey-signalzone
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Pulihkan rekod signal terakhir
+        uses: actions/cache/restore@v4
+        with:
+          path: notifier/sz-state.json
+          key: szstate-${{ github.run_id }}
+          restore-keys: szstate-
+      - name: Pasang web-push
+        working-directory: notifier
+        run: npm install --no-audit --no-fund --silent
+      - name: Semak signal & hantar notifikasi
+        working-directory: notifier
+        env:
+          PUSH_SUB_SZ: ${{ secrets.PUSH_SUB_SZ }}
+          VAPID_PRIVATE: ${{ secrets.VAPID_PRIVATE }}
+          SZ_SYMBOL: ${{ vars.SZ_SYMBOL }}
+          SZ_TFS: ${{ vars.SZ_TFS }}
+          SZ_REQUIRE_ZONE: ${{ vars.SZ_REQUIRE_ZONE }}
+          SZ_REQUIRE_BBMA: ${{ vars.SZ_REQUIRE_BBMA }}
+          SZ_ASIA_FILTER: ${{ vars.SZ_ASIA_FILTER }}
+          SZ_RR: ${{ vars.SZ_RR }}
+          BROKER_OFFSET: ${{ vars.BROKER_OFFSET }}
+          TEST: ${{ inputs.test }}
+        run: node sz-run.js
+      - name: Simpan rekod signal terakhir
+        if: always() && hashFiles('notifier/sz-state.json') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: notifier/sz-state.json
+          key: szstate-${{ github.run_id }}
