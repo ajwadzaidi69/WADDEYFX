@@ -25,7 +25,7 @@ const TFS = { M5: 300, M15: 900, H1: 3600, H4: 14400, D1: 86400 };
 const LABEL = { frxXAUUSD: 'XAUUSD', frxXAGUSD: 'XAGUSD', frxEURUSD: 'EURUSD', frxGBPUSD: 'GBPUSD', frxUSDJPY: 'USDJPY' };
 const STATE_FILE = path.join(__dirname, 'sz-state.json');
 const NEWS_FILE = path.join(__dirname, '..', 'signalzone', 'news.json');
-const ENDPOINTS = ['wss://ws.derivws.com/websockets/v3?app_id=1089', 'wss://ws.binaryws.com/websockets/v3?app_id=1089'];
+const ENDPOINTS = ['wss://api.derivws.com/trading/v1/options/ws/public', 'wss://ws.derivws.com/websockets/v3?app_id=1089'];
 
 const readState = () => { try { return JSON.parse(fs.readFileSync(STATE_FILE, 'utf8')); } catch (e) { return {}; } };
 const writeState = s => fs.writeFileSync(STATE_FILE, JSON.stringify(s));
