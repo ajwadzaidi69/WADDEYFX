@@ -65,7 +65,7 @@ main{max-width:960px;margin:0 auto;padding:12px 12px 0}
 .prog .tl{position:absolute;top:26px;font-size:10px;color:var(--mut);transform:translateX(-50%);white-space:nowrap}
 .prog .now{position:absolute;top:2px;width:14px;height:14px;border-radius:50%;background:var(--gold);border:3px solid var(--bg);transform:translateX(-50%);box-shadow:0 0 10px var(--gold)}
 /* chart */
-#chartWrap{position:relative;height:420px;padding:0;overflow:hidden}
+#chartWrap{position:relative;padding:0;overflow:hidden}
 #chart{position:absolute;inset:0}#ov{position:absolute;inset:0;pointer-events:none;z-index:3}
 .tog{display:flex;gap:6px;flex-wrap:wrap}.tog button{font-size:11.5px;padding:4px 9px;color:var(--mut)}.tog button.on{color:var(--tx);border-color:var(--gold)}
 .legend{display:flex;flex-wrap:wrap;gap:10px;font-size:11px;color:var(--mut);margin-top:8px}.sw{display:inline-block;width:12px;height:3px;border-radius:2px;margin-right:4px;vertical-align:middle}
@@ -125,7 +125,32 @@ dialog label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var
 .sbig .vv{font-size:40px;font-weight:900;margin:6px 0}
 .sgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.sgrid .tbox{padding:14px;text-align:center}.sgrid .tbox .v{font-size:22px}
 textarea.code{width:100%;height:90px;font:11px ui-monospace,monospace;background:#0b0d12;color:#cbd5e1;border:1px solid var(--line);border-radius:8px;padding:8px}
-@media (max-width:560px){.pricebar{grid-template-columns:1fr 1fr}.pricebar .tf3{display:none}.checks{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}#chartWrap{height:380px}.tgrid{grid-template-columns:repeat(2,1fr)}}
+/* ===== susun atur penuh ===== */
+.dgrid{display:grid;grid-template-columns:minmax(0,1fr);grid-template-areas:"side" "chart" "tabs";gap:0 14px}
+.dside{grid-area:side;min-width:0}.dchart{grid-area:chart;min-width:0}.dtabs{grid-area:tabs;min-width:0}
+.chartcard{display:flex;flex-direction:column}
+#chartWrap{margin:0;border-radius:10px;flex:1}
+.tabbar{display:flex;gap:4px;overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:5px;margin-bottom:12px;scrollbar-width:none}
+.tabbar::-webkit-scrollbar{display:none}
+.tabbar button{flex:none;border:0;background:none;color:var(--mut);font-weight:700;font-size:13px;padding:8px 13px;border-radius:10px;white-space:nowrap}
+.tabbar button.on{background:var(--card2);color:var(--tx);box-shadow:inset 0 -2px 0 var(--gold)}
+.tpane[hidden]{display:none}
+#newsDot:not(:empty){display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--bear);margin-left:3px;vertical-align:1px}
+@media (min-width:1100px){
+  main{max-width:none;padding:14px 16px 0}
+  .dgrid{grid-template-columns:minmax(0,1fr) 410px;grid-template-areas:"chart side" "tabs tabs"}
+  .dchart .chartcard{height:100%;margin-bottom:12px}
+  #chartWrap{height:auto;min-height:560px}
+  .dside .pricebar{grid-template-columns:1.25fr 1fr}.dside .pricebar .tf3{display:none}
+  .dside .checks{grid-template-columns:1fr}
+  .dside .tgrid{grid-template-columns:repeat(2,1fr)}
+  .seg{justify-content:flex-start}.seg button{flex:none;min-width:64px}
+  .tpane .grid2{grid-template-columns:1fr 1fr}
+  .foot{padding-bottom:12px}
+  nav.bnav{justify-content:center}nav.bnav button{flex:none;width:170px}
+}
+@media (max-width:1099px){#chartWrap{height:400px;flex:none}}
+@media (max-width:560px){.pricebar{grid-template-columns:1fr 1fr}.pricebar .tf3{display:none}.checks{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.tgrid{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
@@ -146,7 +171,8 @@ textarea.code{width:100%;height:90px;font:11px ui-monospace,monospace;background
 <main>
   <div id="banner" class="banner" hidden></div>
   <section id="viewDash" class="view">
-
+  <div class="dgrid">
+   <div class="dside">
   <!-- HARGA -->
   <div class="card pricebar">
     <div><div class="k">Harga live</div><div id="price" class="price gold">—</div><div id="chg" class="chg mut">—</div></div>
@@ -173,6 +199,57 @@ textarea.code{width:100%;height:90px;font:11px ui-monospace,monospace;background
     <div id="tBody"></div>
   </div>
 
+   </div>
+   <div class="dchart">
+  <!-- CHART -->
+  <div class="card chartcard" style="padding:12px">
+    <div class="ttl" style="margin-bottom:8px"><h2>Chart</h2><span class="sp"></span>
+      <div class="tog" id="tog">
+        <button data-k="ema" class="on">EMA</button><button data-k="bb" class="on">BB</button><button data-k="ma">MA5/10</button>
+        <button data-k="e50" class="on">EMA50</button><button data-k="zone" class="on">Zon</button><button data-k="setup" class="on">Setup</button>
+      </div>
+    </div>
+    <div class="card" id="chartWrap"><div id="chart"></div><canvas id="ov"></canvas></div>
+    <div class="legend">
+      <span><i class="sw" style="background:#22c55e"></i>EMA 5</span><span><i class="sw" style="background:#f59e0b"></i>EMA 13</span>
+      <span><i class="sw" style="background:#3b82f6"></i>Bollinger Band</span><span><i class="sw" style="background:#a855f7"></i>EMA 50</span>
+      <span><i class="sw" style="background:#ef4444"></i>MA5/10 High</span><span><i class="sw" style="background:#14b8a6"></i>MA5/10 Low</span>
+      <span><i class="sw" style="background:#0a7aff;height:9px"></i>Demand</span><span><i class="sw" style="background:#f97316;height:9px"></i>Supply</span>
+    </div>
+  </div>
+
+   </div>
+   <div class="dtabs">
+    <div class="tabbar" id="tabbar">
+      <button data-t="zb" class="on">Zon &amp; BBMA</button><button data-t="mtf">Semua TF</button><button data-t="perf">Prestasi</button>
+      <button data-t="lot">Kalkulator lot</button><button data-t="news">Berita <span id="newsDot"></span></button><button data-t="set">⚙️ Setting</button>
+    </div>
+    <div class="tpane" data-p="zb">
+  <div class="grid2">
+    <!-- ZON -->
+    <div class="card"><div class="ttl"><h2>Zon Supply &amp; Demand</h2></div><div id="zones"></div>
+      <div class="help">Jarak diukur dari harga sekarang. STRONG = zon paling dipercayai.</div></div>
+    <!-- BBMA -->
+    <div class="card"><div class="ttl"><h2>BBMA</h2><span class="sp"></span><span id="bbTrend" class="pill n">—</span></div>
+      <div id="bbState" style="margin-bottom:8px"></div><div class="k" style="margin-bottom:4px">Setup terkini</div><div id="bbSetups"></div></div>
+  </div>
+
+    </div>
+    <div class="tpane" data-p="mtf" hidden>
+  <!-- MTF -->
+  <div class="card"><div class="ttl"><h2>Semua timeframe</h2><span class="sp"></span><span class="k">trader pro trade ikut TF besar</span></div>
+    <table><thead><tr><th>TF</th><th>Trend EMA</th><th>BBMA</th><th>Vs EMA50</th><th>Signal terakhir</th></tr></thead><tbody id="mtf"></tbody></table></div>
+
+    </div>
+    <div class="tpane" data-p="perf" hidden>
+  <!-- PRESTASI -->
+  <div class="card"><div class="ttl"><h2>Prestasi signal</h2><span class="sp"></span><span id="perfRange" class="k"></span></div>
+    <div class="stats" id="stats"></div>
+    <table><thead><tr><th>Masa</th><th>Signal</th><th>Entry</th><th>Hasil</th></tr></thead><tbody id="hist"></tbody></table>
+    <div class="help">Dikira semula dari candle yang dimuatkan (bukan jaminan prestasi akan datang). TP = +R ikut setting, SL = -1R, INV = ditutup pada harga signal lawan.</div></div>
+
+    </div>
+    <div class="tpane" data-p="lot" hidden>
   <!-- KALKULATOR LOT -->
   <div class="card" id="lotCard">
     <div class="ttl"><h2>Kalkulator saiz lot</h2><span class="sp"></span><span id="lotSrc" class="k"></span></div>
@@ -191,6 +268,8 @@ textarea.code{width:100%;height:90px;font:11px ui-monospace,monospace;background
     <div class="help">Kontrak: XAUUSD 100 oz, XAGUSD 5000 oz, FX 100,000 unit setiap 1 lot. Semak spesifikasi broker kalau berbeza. Risiko 1–2% setiap trade adalah amalan trader profesional.</div>
   </div>
 
+    </div>
+    <div class="tpane" data-p="news" hidden>
   <!-- BERITA -->
   <div class="card" id="newsCard">
     <div class="ttl"><h2>Berita ekonomi USD</h2><span class="sp"></span><span id="newsUpd" class="k"></span></div>
@@ -198,48 +277,17 @@ textarea.code{width:100%;height:90px;font:11px ui-monospace,monospace;background
     <div class="help">Merah = impak tinggi (NFP, CPI, FOMC…). Elak buka trade 30 minit sebelum dan 15 minit selepas berita merah. Waktu dalam MYT.</div>
   </div>
 
-  <!-- CHART -->
-  <div class="card" style="padding:12px">
-    <div class="ttl" style="margin-bottom:8px"><h2>Chart</h2><span class="sp"></span>
-      <div class="tog" id="tog">
-        <button data-k="ema" class="on">EMA</button><button data-k="bb" class="on">BB</button><button data-k="ma">MA5/10</button>
-        <button data-k="e50" class="on">EMA50</button><button data-k="zone" class="on">Zon</button><button data-k="setup" class="on">Setup</button>
-      </div>
     </div>
-    <div class="card" id="chartWrap" style="margin:0;border-radius:10px"><div id="chart"></div><canvas id="ov"></canvas></div>
-    <div class="legend">
-      <span><i class="sw" style="background:#22c55e"></i>EMA 5</span><span><i class="sw" style="background:#f59e0b"></i>EMA 13</span>
-      <span><i class="sw" style="background:#3b82f6"></i>Bollinger Band</span><span><i class="sw" style="background:#a855f7"></i>EMA 50</span>
-      <span><i class="sw" style="background:#ef4444"></i>MA5/10 High</span><span><i class="sw" style="background:#14b8a6"></i>MA5/10 Low</span>
-      <span><i class="sw" style="background:#0a7aff;height:9px"></i>Demand</span><span><i class="sw" style="background:#f97316;height:9px"></i>Supply</span>
-    </div>
-  </div>
-
-  <div class="grid2">
-    <!-- ZON -->
-    <div class="card"><div class="ttl"><h2>Zon Supply &amp; Demand</h2></div><div id="zones"></div>
-      <div class="help">Jarak diukur dari harga sekarang. STRONG = zon paling dipercayai.</div></div>
-    <!-- BBMA -->
-    <div class="card"><div class="ttl"><h2>BBMA</h2><span class="sp"></span><span id="bbTrend" class="pill n">—</span></div>
-      <div id="bbState" style="margin-bottom:8px"></div><div class="k" style="margin-bottom:4px">Setup terkini</div><div id="bbSetups"></div></div>
-  </div>
-
-  <!-- MTF -->
-  <div class="card"><div class="ttl"><h2>Semua timeframe</h2><span class="sp"></span><span class="k">trader pro trade ikut TF besar</span></div>
-    <table><thead><tr><th>TF</th><th>Trend EMA</th><th>BBMA</th><th>Vs EMA50</th><th>Signal terakhir</th></tr></thead><tbody id="mtf"></tbody></table></div>
-
-  <!-- PRESTASI -->
-  <div class="card"><div class="ttl"><h2>Prestasi signal</h2><span class="sp"></span><span id="perfRange" class="k"></span></div>
-    <div class="stats" id="stats"></div>
-    <table><thead><tr><th>Masa</th><th>Signal</th><th>Entry</th><th>Hasil</th></tr></thead><tbody id="hist"></tbody></table>
-    <div class="help">Dikira semula dari candle yang dimuatkan (bukan jaminan prestasi akan datang). TP = +R ikut setting, SL = -1R, INV = ditutup pada harga signal lawan.</div></div>
-
+    <div class="tpane" data-p="set" hidden>
   <!-- SETTING -->
-  <div class="card"><details><summary>⚙️ Setting &amp; notifikasi</summary>
+  <div class="card"><div class="ttl"><h2>Setting &amp; notifikasi</h2></div>
     <div id="settings" style="margin-top:8px"></div>
     <div style="display:flex;gap:8px;margin-top:10px"><button id="saveSet" style="flex:1;background:var(--gold);color:#0b0d12;font-weight:800;border:0">Simpan &amp; kira semula</button><button id="resetSet">Default</button></div>
-  </details></div>
+  </div>
 
+    </div>
+   </div>
+  </div>
   </section>
 
   <!-- ================= MOD RINGKAS ================= -->
@@ -307,6 +355,8 @@ $('sym').value=sym;
 
 // ---------- util
 const dp=p=>p<20?5:p<1000?3:2, fx=v=>v==null||!isFinite(v)?'—':Number(v).toFixed(dp(Math.abs(v)));
+// jarak / perbezaan harga: guna bilangan perpuluhan ikut harga simbol (cth emas 2 tempat)
+const refPx=()=>live??(R&&R.C.length?R.C[R.C.length-1]:1000), fxd=v=>v==null||!isFinite(v)?'—':Number(v).toFixed(dp(Math.abs(refPx())));
 const fT=t=>new Date(t*1000).toLocaleString('ms-MY',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:false});
 const fH=t=>new Date(t*1000).toLocaleTimeString('ms-MY',{hour:'2-digit',minute:'2-digit',hour12:false});
 const ago=t=>{const s=nowS()-t;if(s<3600)return Math.max(1,Math.round(s/60))+' min lalu';if(s<86400)return Math.round(s/3600)+' jam lalu';return Math.round(s/86400)+' hari lalu';};
@@ -351,10 +401,11 @@ const ov=$('ov'),ctx=ov.getContext('2d');
 function sizeAll(){const w=$('chartWrap');chart.applyOptions({width:w.clientWidth,height:w.clientHeight});const r=window.devicePixelRatio||1;
   ov.width=w.clientWidth*r;ov.height=w.clientHeight*r;ov.style.width=w.clientWidth+'px';ov.style.height=w.clientHeight+'px';ctx.setTransform(r,0,0,r,0,0);drawOv();}
 window.addEventListener('resize',sizeAll);
+try{new ResizeObserver(()=>sizeAll()).observe($('chartWrap'));}catch(e){}
 chart.timeScale().subscribeVisibleLogicalRangeChange(()=>drawOv());
 function xOf(t){const ts=chart.timeScale();const x=ts.timeToCoordinate(t);if(x!=null)return x;if(!all.length)return null;
   const lt=all[all.length-1].t,lc=ts.timeToCoordinate(lt);if(lc==null)return null;return lc+(t-lt)/TFS[tf]*ts.options().barSpacing;}
-function drawOv(){const W=ov.clientWidth,H=ov.clientHeight;ctx.clearRect(0,0,W,H);if(!R||!show.zone)return;const pr=W-62;
+function drawOv(){const W=ov.clientWidth,H=ov.clientHeight;ctx.clearRect(0,0,W,H);if(!R||!show.zone)return;let psw=62;try{psw=chart.priceScale('right').width()||62;}catch(e){}const pr=W-psw-2;
   const z=(o,col,lab)=>{let x1=xOf(o.t);const y1=cs.priceToCoordinate(o.top),y2=cs.priceToCoordinate(o.bot);if(y1==null||y2==null)return;if(x1==null||x1<0)x1=0;if(x1>pr)return;
     const a=Math.max(.12,o.alpha*1.1);ctx.fillStyle=col.replace('A',a.toFixed(2));ctx.fillRect(x1,y1,pr-x1,y2-y1);ctx.strokeStyle=col.replace('A','.9');ctx.lineWidth=1;ctx.strokeRect(x1,y1,pr-x1,y2-y1);
     ctx.font='bold 10px system-ui';const tw=ctx.measureText(lab).width+10;ctx.fillStyle=col.replace('A','1');ctx.fillRect(pr-tw-4,(y1+y2)/2-8,tw,16);ctx.fillStyle='#fff';ctx.fillText(lab,pr-tw+1,(y1+y2)/2+4);};
@@ -429,7 +480,7 @@ function render(){const k=R.C.length-1,an=analyse();
   $('vAction').innerHTML=an.act;$('vTime').textContent='Candle '+fH(R.T[k]);
   $('vChecks').innerHTML=an.chk.map(([ok,t])=>`<div class="chk"><b class="${ok?'y':'x'}">${ok?'✓':'✕'}</b><span>${t}</span></div>`).join('');
   $('vWarns').innerHTML=an.warns.map(w=>`<div class="warn">⚠️ ${w}</div>`).join('');
-  $('atr').textContent=fx(R.A[k]);
+  $('atr').textContent=fxd(R.A[k]);
   // trade aktif
   renderTrade();
   // zon
@@ -437,7 +488,7 @@ function render(){const k=R.C.length-1,an=analyse();
   const c=an.c;
   $('zones').innerHTML=zl.length?zl.map(z=>{const d=c>z.top?c-z.top:c<z.bot?z.bot-c:0;const inside=d===0;
     return `<div class="zrow"><span class="ztag" style="background:${z.s?'#f97316':'#0a7aff'}">${z.s?'SUPPLY':'DEMAND'} ${z.rank}</span>
-    <div><div class="v">${fx(z.bot)} – ${fx(z.top)}<span class="str ${z.strength}">${z.strength}</span></div><div class="k">${inside?'<b class="gold">Harga dalam zon sekarang</b>':(z.s?'Atas':'Bawah')+' harga · '+fx(d)+' ('+(d/an.a).toFixed(1)+' ATR)'}</div></div>
+    <div><div class="v">${fx(z.bot)} – ${fx(z.top)}<span class="str ${z.strength}">${z.strength}</span></div><div class="k">${inside?'<b class="gold">Harga dalam zon sekarang</b>':(z.s?'Atas':'Bawah')+' harga · '+fxd(d)+' ('+(d/an.a).toFixed(1)+' ATR)'}</div></div>
     <span class="k">${z.s?'cari SELL':'cari BUY'}</span></div>`;}).join(''):'<div class="k">Tiada zon aktif sekarang.</div>';
   // BBMA
   const bt=R.bbma;$('bbTrend').className='pill '+(bt>0?'b':bt<0?'s':'n');$('bbTrend').textContent=bt>0?'NAIK':bt<0?'TURUN':'MENDATAR';
@@ -465,7 +516,7 @@ function renderTrade(){const p=R&&R.pos;const st=$('tStatus');
    <div class="tgrid"><div class="tbox"><div class="k">Entry</div><div class="v gold">${fx(p.entry)}</div></div><div class="tbox"><div class="k">Stop Loss</div><div class="v bear">${fx(p.sl)}</div></div>
    <div class="tbox"><div class="k">TP akhir (${rr}R)</div><div class="v bull">${fx(p.tp)}</div></div>
    ${p.tpLv.map((v,i)=>`<div class="tbox"><div class="k">TP${i+1} (${i+1}R)</div><div class="v" style="color:#86efac">${fx(v)}</div></div>`).join('')}
-   <div class="tbox"><div class="k">Risiko</div><div class="v">${fx(risk)}</div></div></div>
+   <div class="tbox"><div class="k">Jarak SL</div><div class="v">${fxd(risk)}</div></div></div>
    <div class="prog"><div class="bar" style="background:linear-gradient(90deg,var(--bear) 0%,var(--bear) ${pct(0)}%,var(--bull) ${pct(0)}%)"></div>${ticks}<div class="now" style="left:${pct(r)}%"></div></div>
    <div class="help" style="margin-top:22px">${r>=1?'✅ TP1 dah lepas: pertimbangkan tutup separuh & alih SL ke Entry (breakeven).':r<=-0.7?'⚠️ Harga hampir SL. Jangan alih SL lebih jauh.':'Biarkan trade berjalan ikut pelan. Jangan ubah SL tanpa sebab.'}</div>`;}
 
@@ -549,6 +600,10 @@ $('logCsv').onclick=()=>{const rows=logRows();const h='Simbol,TF,Arah,Masa masuk
 $('logClear').onclick=()=>{if(!confirm('Padam semua log signal dalam phone ini?'))return;logDB={};store.set('log',{});renderLog();};
 setBadge();
 
+// ---------- TAB BAWAH
+function showTab(t){[...$('tabbar').children].forEach(b=>b.classList.toggle('on',b.dataset.t===t));document.querySelectorAll('.tpane').forEach(p=>p.hidden=p.dataset.p!==t);store.set('tab',t);if(t==='lot')renderLot();if(t==='news')renderNews();}
+$('tabbar').onclick=e=>{const b=e.target.closest('button');if(b)showTab(b.dataset.t);};
+showTab(store.get('tab','zb'));
 // ---------- KALKULATOR LOT
 const CONTRACT=s=>s==='frxXAUUSD'?100:s==='frxXAGUSD'?5000:100000;
 let lot=Object.assign({acc:'std',bal:1000,risk:1},store.get('lot',{}));
@@ -558,7 +613,7 @@ function renderLot(){const cent=lot.acc==='cent',cur=cent?'USC':'$';$('lBalLab')
   let slD=+$('lSL').value||0,src='manual';
   if(!slD&&R&&R.pos){slD=Math.abs(R.pos.entry-R.pos.sl);src='dari signal aktif';}
   else if(!slD&&R){const s=[...R.marks].reverse().find(x=>x.type==='buy'||x.type==='sell');if(s){slD=Math.abs(s.price-s.sl);src='dari signal terakhir';}}
-  $('lotSrc').textContent=slD?'SL '+fx(slD)+' · '+src:'';
+  $('lotSrc').textContent=slD?'Jarak SL '+fxd(slD)+' · '+src:'';
   if(!slD||!lot.bal||!lot.risk){['lotOut','lotRisk','lotGain','lotPip'].forEach(i=>$(i).textContent='—');$('lotNote').textContent='Isi baki akaun dan risiko.';return;}
   const cs=CONTRACT(sym),money=lot.bal*lot.risk/100,raw=money/(slD*cs),l=Math.floor(raw*100)/100;
   $('lotOut').textContent=l>=0.01?l.toFixed(2)+' lot':'< 0.01';
@@ -580,6 +635,7 @@ function newsNear(){const n=nowS();const hi=news.filter(e=>e.impact==='High');
   if(just)return{msg:`🔴 Berita baru keluar (${just.title}). Harga mungkin liar 15 minit — tunggu stabil.`,e:just};return null;}
 function renderNews(){const n=nowS(),up=news.filter(e=>e.t>n-3600).slice(0,8);const nn=newsNear();
   $('newsSoon').innerHTML=nn?`<div class="nsoon">${nn.msg}</div>`:'';
+  $('newsDot').textContent=nn?' ':'';
   $('newsUpd').textContent=newsUpd?'kemas kini '+ago(newsUpd):'';
   const fd=t=>new Date(t*1000).toLocaleString('ms-MY',{weekday:'short',hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'Asia/Kuala_Lumpur'});
   $('newsList').innerHTML=up.length?up.map(e=>`<div class="nrow"><span class="imp ${e.impact}"></span><div><b>${e.title}</b><div class="k">${e.forecast?'Jangkaan '+e.forecast+' · ':''}${e.previous?'Sebelum '+e.previous:''}</div></div><div style="text-align:right"><b>${fd(e.t)}</b><div class="k">${e.t>n?'dalam '+(e.t-n<3600?Math.ceil((e.t-n)/60)+' min':e.t-n<86400?Math.round((e.t-n)/3600)+' jam':Math.round((e.t-n)/86400)+' hari'):'baru berlaku'}</div></div></div>`).join('')
@@ -655,14 +711,14 @@ async function refresh(force){if(busy)return;busy=true;
     if(!firstLoad&&added>0&&$('viewLog').hidden){unseen+=added;store.set('unseen',unseen);setBadge();}
     if(!$('viewLog').hidden)renderLog();
     if(!tickSub){try{const r=await send({ticks:sym,subscribe:1});tickSub=r.subscription&&r.subscription.id;if(r.tick)onTick(+r.tick.epoch,+r.tick.quote);}catch(e){}}
-    try{if(dayOpen==null||force){const d=await candles(86400,2);dayOpen=d.length?d[d.length-1].o:null;}}catch(e){}
+    try{if(dayOpen==null||force){const d=await candles(86400,2);dayOpen=d.length?d[d.length-1].o:null;if(live!=null)updChg();}}catch(e){}
     conn('ok');if(!$('banner').textContent.startsWith('🔔'))banner('');
     loadMTF(force);
   }catch(e){conn('err');banner('Gagal ambil data: '+e.message+'. Cuba semula dalam 10 saat…',true);setTimeout(()=>refresh(),10000);}
   finally{busy=false;}}
 let lastRender=0;
-function onTick(ep,p){live=p;$('price').textContent=fx(p);
-  if(dayOpen){const ch=p-dayOpen,pc=ch/dayOpen*100;$('chg').textContent=`${ch>=0?'+':''}${fx(ch)} (${pc>=0?'+':''}${pc.toFixed(2)}%) hari ini`;$('chg').className='chg '+(ch>=0?'bull':'bear');}
+function updChg(){if(!dayOpen||live==null)return;const ch=live-dayOpen,pc=ch/dayOpen*100;$('chg').textContent=`${ch>=0?'+':''}${fxd(ch)} (${pc>=0?'+':''}${pc.toFixed(2)}%) hari ini`;$('chg').className='chg '+(ch>=0?'bull':'bear');}
+function onTick(ep,p){live=p;$('price').textContent=fx(p);updChg();
   if(!cur)return;const sec=TFS[tf],bs=bucket(ep,sec);
   if(bs>cur.time){cur={time:bs,open:p,high:p,low:p,close:p};cs.update(cur);setTimeout(()=>refresh(),1500);return;}
   if(bs<cur.time)return;cur.high=Math.max(cur.high,p);cur.low=Math.min(cur.low,p);cur.close=p;cs.update(cur);
