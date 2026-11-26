@@ -19,6 +19,7 @@ const CFG = {
   asiaFilter: env('SZ_ASIA_FILTER', 'false') === 'true',
   slStruct: env('SZ_SL_STRUCT', 'false') === 'true',
   requireHTF: env('SZ_REQUIRE_HTF', 'false') === 'true',
+  beR: parseFloat(env('SZ_BE_R', '0')) || 0,
   rr: parseFloat(env('SZ_RR', '3')) || 3
 };
 const ALERT_TPSL = env('SZ_ALERT_TPSL', 'true') === 'true';
@@ -130,7 +131,7 @@ async function main() {
     const st = state.tf[tf] = state.tf[tf] || {};
     // hanya peristiwa baru sejak semakan lepas (maksimum 2 candle ke belakang)
     const since = Math.max(st.lastBar || 0, lastT - sec * 2);
-    const fresh = R.marks.filter(m => m.t > since && ['buy', 'sell', 'tp', 'sl', 'inv'].includes(m.type));
+    const fresh = R.marks.filter(m => m.t > since && ['buy', 'sell', 'tp', 'sl', 'be', 'inv'].includes(m.type));
     st.lastBar = lastT;
     const ref = bars[bars.length - 1].c;
     for (const m of fresh) {
@@ -141,8 +142,8 @@ async function main() {
         await sendAll(subs, { title: `${m.type === 'buy' ? '🟢' : '🔴'} ${d} ${sym} ${tf} ${stars}`,
           body: `Entry ${fmt(m.price, ref)} · SL ${fmt(m.sl, ref)} · TP ${fmt(m.tp, ref)}\nSokongan: ${sup}${OFFSET ? '\n(harga broker)' : ''}`, tag: 'wsz-' + tf });
       } else if (ALERT_TPSL) {
-        const t = m.type === 'tp' ? `✅ TP kena · ${sym} ${tf}` : m.type === 'sl' ? `❌ SL kena · ${sym} ${tf}` : `⚠️ ${m.txt} · ${sym} ${tf}`;
-        const b = m.type === 'tp' ? `Sasaran ${CFG.rr}R tercapai. Trade selesai dengan untung.` : m.type === 'sl' ? 'Stop loss kena. Trade selesai -1R. Tunggu setup seterusnya.' : 'Signal lama dibatalkan kerana signal arah lawan keluar.';
+        const t = m.type === 'tp' ? `✅ TP kena · ${sym} ${tf}` : m.type === 'sl' ? `❌ SL kena · ${sym} ${tf}` : m.type === 'be' ? `⚪ Breakeven · ${sym} ${tf}` : `⚠️ ${m.txt} · ${sym} ${tf}`;
+        const b = m.type === 'tp' ? `Sasaran ${CFG.rr}R tercapai. Trade selesai dengan untung.` : m.type === 'sl' ? 'Stop loss kena. Trade selesai -1R. Tunggu setup seterusnya.' : m.type === 'be' ? 'Harga kembali ke Entry selepas SL dialih. Trade selesai 0R (tiada rugi).' : 'Signal lama dibatalkan kerana signal arah lawan keluar.';
         await sendAll(subs, { title: t, body: b, tag: 'wsz-res-' + tf });
       }
     }
