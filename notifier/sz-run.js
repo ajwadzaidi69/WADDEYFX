@@ -17,11 +17,14 @@ const CFG = {
   requireZone: env('SZ_REQUIRE_ZONE', 'false') === 'true',
   requireBBMA: env('SZ_REQUIRE_BBMA', 'false') === 'true',
   asiaFilter: env('SZ_ASIA_FILTER', 'false') === 'true',
+  slStruct: env('SZ_SL_STRUCT', 'false') === 'true',
+  requireHTF: env('SZ_REQUIRE_HTF', 'false') === 'true',
   rr: parseFloat(env('SZ_RR', '3')) || 3
 };
 const ALERT_TPSL = env('SZ_ALERT_TPSL', 'true') === 'true';
 const ALERT_NEWS = env('SZ_ALERT_NEWS', 'true') === 'true';
 const TFS = { M5: 300, M15: 900, H1: 3600, H4: 14400, D1: 86400 };
+const HTF = { M5: 'H1', M15: 'H1', H1: 'H4', H4: 'D1', D1: 'D1' };
 const LABEL = { frxXAUUSD: 'XAUUSD', frxXAGUSD: 'XAGUSD', frxEURUSD: 'EURUSD', frxGBPUSD: 'GBPUSD', frxUSDJPY: 'USDJPY' };
 const STATE_FILE = path.join(__dirname, 'sz-state.json');
 const NEWS_FILE = path.join(__dirname, '..', 'signalzone', 'news.json');
@@ -111,7 +114,19 @@ async function main() {
     if (bars.length < 200) { console.log(tf, 'data tak cukup'); continue; }
     const lastT = bars[bars.length - 1].t;
     if (now - (lastT + sec) > Math.max(3600, sec * 2)) { console.log(tf, 'pasaran tutup'); continue; }
-    const R = SZ.compute(bars, Object.assign({}, CFG, { tfSec: sec }), 1500);
+    let htf = null;
+    if (CFG.requireHTF && HTF[tf] !== tf) {
+      try {
+        const hs = TFS[HTF[tf]];
+        const hr = await send({ ticks_history: SYMBOL, end: 'latest', style: 'candles', granularity: hs, count: 1600, adjust_start_time: 1 });
+        const a5 = 2 / 6, a13 = 2 / 14; let e5 = null, e13 = null; htf = [];
+        (hr.candles || []).map(b => ({ t: +b.epoch, c: +b.close })).filter(b => b.t + hs <= now + 1).forEach(b => {
+          e5 = e5 == null ? b.c : b.c * a5 + e5 * (1 - a5); e13 = e13 == null ? b.c : b.c * a13 + e13 * (1 - a13);
+          htf.push({ t: b.t + hs, d: e5 > e13 ? 1 : e5 < e13 ? -1 : 0 });
+        });
+      } catch (e) { console.log(tf, 'gagal ambil TF besar:', e.message); }
+    }
+    const R = SZ.compute(bars, Object.assign({}, CFG, { tfSec: sec, htf }), 1500);
     const st = state.tf[tf] = state.tf[tf] || {};
     // hanya peristiwa baru sejak semakan lepas (maksimum 2 candle ke belakang)
     const since = Math.max(st.lastBar || 0, lastT - sec * 2);
