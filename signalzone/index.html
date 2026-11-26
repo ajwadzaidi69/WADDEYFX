@@ -631,7 +631,7 @@ let optRes=[];
 function optStats(r,rr){const o=outcomes(r,rr).filter(x=>x.res!=='run');let win=0,loss=0,gw=0,gl=0,net=0,streak=0,maxS=0;
   o.forEach(x=>{const v=x.r||0;net+=v;if(x.res==='tp'||v>0){win++;gw+=Math.max(v,0);streak=0;}else{if(x.res==='sl'||v<0){loss++;gl+=Math.abs(Math.min(v,0));streak++;maxS=Math.max(maxS,streak);}}});
   return{n:o.length,win,loss,wr:o.length?win/o.length*100:0,net,pf:gl>0?gw/gl:(gw>0?99:0),maxS};}
-async function runOpt(){if(!bars.length){$('optProg').textContent='Data belum dimuatkan.';return;}
+async function runOpt(){if(!bars.length||busy||barsTf!==tf||barsSym!==sym){$('optProg').textContent='⏳ Data '+tf+' masih dimuatkan. Tunggu 2-3 saat dan tekan semula.';return;}
   $('optRun').disabled=true;$('optProg').textContent='Menyediakan data TF besar…';
   let htf=null;try{htf=await htfDirs();}catch(e){}
   const asiaOK=TFS[tf]<=3600,combos=[];
@@ -642,7 +642,10 @@ async function runOpt(){if(!bars.length){$('optProg').textContent='Data belum di
       const r=WaddeySZ.compute(bars,Object.assign({},cfg,c,{tfSec:TFS[tf],htf}),1500);optRes.push(Object.assign({c},optStats(r,cfg.rr)));}
     $('optProg').textContent=`Menguji ${i}/${combos.length}…`;
     if(i<combos.length)setTimeout(step,0);else{$('optRun').disabled=false;$('optProg').textContent='Siap ✓';
-      $('optInfo').textContent=`${symName()} ${tf} · ${Math.min(1500,bars.length)} candle · RR ${cfg.rr}`;renderOpt();}};
+      const gaps=[];for(let j=Math.max(1,bars.length-300);j<bars.length;j++)gaps.push(bars[j].t-bars[j-1].t);gaps.sort((a,b)=>a-b);
+      const med=gaps[Math.floor(gaps.length/2)]||0,days=bars.length?((bars[bars.length-1].t-bars[Math.max(0,bars.length-1500)].t)/86400):0;
+      const okGap=tf==='W1'||Math.abs(med-TFS[tf])<=TFS[tf]*0.1;
+      $('optInfo').innerHTML=`${symName()} ${tf} · ${Math.min(1500,bars.length)} candle (${days.toFixed(0)} hari) · RR ${cfg.rr}`+(okGap?'':` · <b class="bear">⚠️ jarak candle ${Math.round(med/60)} min, bukan ${TFS[tf]/60} min — data salah, tekan semula</b>`);renderOpt();}};
   step();}
 function comboName(c){const p=[];if(c.requireZone)p.push('Zon');if(c.requireBBMA)p.push('BBMA');if(c.requireHTF)p.push('TF besar ('+HTF[tf]+')');if(c.asiaFilter)p.push('Tanpa sesi Asia');return p.length?'EMA + '+p.join(' + '):'EMA sahaja (tiada penapis)';}
 function renderOpt(){if(!optRes.length)return;const mn=+$('optMin').value||0,key=$('optSort').value;
@@ -755,10 +758,13 @@ function notify(){const f=R.last||{};let msg='';const k=R.T[R.T.length-1];
   try{if('Notification'in window&&Notification.permission==='granted'){(navigator.serviceWorker&&navigator.serviceWorker.getRegistration?navigator.serviceWorker.getRegistration():Promise.resolve(null)).then(r=>r?r.showNotification('Waddey Signal Zone',{body:full,icon:'icon-192.png',tag:'wsz'}):new Notification('Waddey Signal Zone',{body:full}));}}catch(e){}}
 
 // ---------- kemas kini
-async function refresh(force){if(busy)return;busy=true;
+let pendingRefresh=false,barsTf='',barsSym='';
+async function refresh(force){if(busy){pendingRefresh=true;return;}busy=true;const myTf=tf,mySym=sym;
   try{conn('busy');await ensure();
     try{const t=await send({time:1});if(t.time)srvOff=t.time-Date.now()/1000;}catch(e){}
-    all=await tfCandles(tf,1600);const n=nowS();bars=all.filter(b=>b.t+TFS[tf]<=n+1);
+    const got=await tfCandles(myTf,1600);
+    if(tf!==myTf||sym!==mySym){pendingRefresh=true;return;}   // TF/simbol bertukar semasa memuatkan: buang data lama, muat semula
+    all=got;const n=nowS();bars=all.filter(b=>b.t+TFS[tf]<=n+1);barsTf=tf;barsSym=sym;
     if(bars.length<80)throw new Error('data tak cukup');
     const htf=cfg.requireHTF?await htfDirs():null;
     R=WaddeySZ.compute(bars,Object.assign({},cfg,{tfSec:TFS[tf],htf}),1500);
@@ -773,7 +779,7 @@ async function refresh(force){if(busy)return;busy=true;
     conn('ok');if(!$('banner').textContent.startsWith('🔔'))banner('');
     loadMTF(force);
   }catch(e){conn('err');banner('Gagal ambil data: '+e.message+'. Cuba semula dalam 10 saat…',true);setTimeout(()=>refresh(),10000);}
-  finally{busy=false;}}
+  finally{busy=false;if(pendingRefresh){pendingRefresh=false;setTimeout(()=>refresh(true),0);}}}
 let lastRender=0;
 function updChg(){if(!dayOpen||live==null)return;const ch=live-dayOpen,pc=ch/dayOpen*100;$('chg').textContent=`${ch>=0?'+':''}${fxd(ch)} (${pc>=0?'+':''}${pc.toFixed(2)}%) hari ini`;$('chg').className='chg '+(ch>=0?'bull':'bear');}
 function onTick(ep,p){live=p;$('price').textContent=fx(p);updChg();
