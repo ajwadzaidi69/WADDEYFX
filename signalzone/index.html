@@ -281,11 +281,11 @@ textarea.code{width:100%;height:90px;font:11px ui-monospace,monospace;background
     <div class="tpane" data-p="opt" hidden>
       <div class="card">
         <div class="ttl"><h2>Uji strategi (backtest pantas)</h2><span class="sp"></span><span id="optInfo" class="k"></span></div>
-        <div class="help" style="margin-top:0">Dashboard kira semula semua signal dari data lepas untuk setiap gabungan penapis, <b>TP (1R / 1.5R / 2R / 3R)</b> dan <b>Breakeven</b>, kemudian susun ikut keputusan. <b>Jalankan ujian</b> = TF semasa sahaja. <b>Uji semua TF</b> = M5, M15 dan H1 serentak, disusun ikut keputusan <b>paling teruk</b> di antara ketiga-tiganya (gabungan "konsisten" = untung di semua TF). Tekan <b>Guna</b> untuk pakai setting tu terus.</div>
+        <div class="help" style="margin-top:0">Dashboard kira semula semua signal dari data lepas untuk setiap gabungan penapis (Zon, TF besar, London+NY, Ruang ke TP, Pullback, Tak terlalu jauh, BB tak sempit) dan <b>TP 1R / 1.5R / 2R</b>. Data dibahagi dua: <b>70% lama</b> untuk memilih, <b>30% baru</b> untuk mengesahkan. Gabungan bertanda <b>"lulus data baru"</b> paling boleh dipercayai. <b>Jalankan ujian</b> = TF semasa sahaja. <b>Uji semua TF</b> = M5, M15 dan H1 serentak, disusun ikut keputusan <b>paling teruk</b> di antara ketiga-tiganya (gabungan "konsisten" = untung di semua TF). Tekan <b>Guna</b> untuk pakai setting tu terus.</div>
         <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap">
           <button id="optRun" style="background:var(--gold);color:#0b0d12;font-weight:800;border:0;padding:9px 16px">▶ Jalankan ujian</button>
           <label class="k" style="display:flex;gap:6px;align-items:center">Susun ikut
-            <select id="optSort"><option value="r">Jumlah R</option><option value="wr">Kadar menang</option><option value="pf">Profit factor</option></select></label>
+            <select id="optSort"><option value="r">Jumlah R (data lama)</option><option value="oos">Jumlah R (data baru)</option><option value="wr">Kadar menang</option><option value="pf">Profit factor</option></select></label>
           <label class="k" style="display:flex;gap:6px;align-items:center">Signal minimum <input id="optMin" type="number" value="20" style="width:64px"></label>
           <label class="k" style="display:flex;gap:6px;align-items:center">Panjang data <select id="optLen"><option value="1500">≈1,500 candle</option><option value="3000" selected>≈3,000 candle</option><option value="6000">≈6,000 candle</option></select></label>
           <button id="optAll" style="font-weight:800">⚡ Uji semua TF (M5 + M15 + H1)</button>
@@ -632,7 +632,7 @@ async function htfDirs(){const h=HTF[tf];if(!h||h===tf)return null;const key=sym
 
 // ---------- UJI STRATEGI
 let optRes=[],optMode='one',optRunning=false;
-const RRS=[1,1.5,2,3],BES=[0,1];
+const RRS=[1,1.5,2],OOS=0.30;   // 30% data terakhir = data baru (luar sampel)
 // ambil sejarah panjang: beberapa permintaan ke belakang (Deriv hadkan setiap permintaan)
 async function longHistory(tfk,target){if(tfk==='W1')return tfCandles('W1',Math.min(target,1500));
   const g=TFS[tfk];let out=[],end='latest',guard=0;
@@ -643,59 +643,71 @@ async function longHistory(tfk,target){if(tfk==='W1')return tfCandles('W1',Math.
 async function htfFor(tfk){const h=HTF[tfk];if(!h||h===tfk)return null;const c=await tfCandles(h,1600),sec=TFS[h],n=nowS();
   const a5=2/(cfg.emaFast+1),a13=2/(cfg.emaSlow+1);let e5=null,e13=null;const arr=[];
   c.filter(b=>b.t+sec<=n+1).forEach(b=>{e5=e5==null?b.c:b.c*a5+e5*(1-a5);e13=e13==null?b.c:b.c*a13+e13*(1-a13);arr.push({t:b.t+sec,d:e5>e13?1:e5<e13?-1:0});});return arr;}
-function optStats(r,rr){const o=outcomes(r,rr).filter(x=>x.res!=='run');let win=0,loss=0,be=0,gw=0,gl=0,net=0,streak=0,maxS=0;
+function statOf(o,rr){let win=0,loss=0,be=0,gw=0,gl=0,net=0,streak=0,maxS=0;
   o.forEach(x=>{const v=x.r||0;net+=v;if(x.res==='tp'||(x.res==='inv'&&v>0)){win++;gw+=Math.max(v,0);streak=0;}else if(x.res==='be'){be++;}else{loss++;gl+=Math.abs(Math.min(v,0));streak++;maxS=Math.max(maxS,streak);}});
   return{n:o.length,win,loss,be,wr:o.length?win/o.length*100:0,net,pf:gl>0?gw/gl:(gw>0?99:0),maxS};}
-function makeCombos(tfk,hasHtf,full){const asiaOK=TFS[tfk]<=3600,out=[];
-  for(const z of[false,true])for(const b of[false,true])for(const h of(hasHtf?[false,true]:[false]))for(const a of(full&&asiaOK?[false,true]:[false]))for(const st of[false,true])for(const rr of RRS)for(const be of BES)
-    out.push({requireZone:z,requireBBMA:b,requireHTF:h,asiaFilter:a,slStruct:st,rr,beR:be});return out;}
-const cKey=c=>[c.requireZone,c.requireBBMA,c.requireHTF,c.asiaFilter,c.slStruct,c.rr,c.beR].map(v=>+v).join('|');
-function runCombos(bars2,tfk,htf,combos,prog){return new Promise(res=>{const out=[];let i=0;
+function optStats(r,rr,splitT){const o=outcomes(r,rr).filter(x=>x.res!=='run');
+  const is=statOf(o.filter(x=>x.t<splitT),rr),oos=statOf(o.filter(x=>x.t>=splitT),rr),all=statOf(o,rr);
+  return Object.assign({},is,{oos,all,maxS:all.maxS});}
+const BASEF={requireBBMA:false,beR:0,slStruct:false,asiaFilter:false};
+function makeCombos(tfk,hasHtf){const sessOK=TFS[tfk]<=3600,out=[];
+  for(const z of[false,true])for(const h of(hasHtf?[false,true]:[false]))for(const sl of(sessOK?[false,true]:[false]))for(const rm of[false,true])for(const pb of[false,true])for(const ex of[false,true])for(const bw of[false,true])for(const rr of RRS)
+    out.push(Object.assign({},BASEF,{requireZone:z,requireHTF:h,sessLN:sl,roomFilter:rm,pullback:pb,extFilter:ex,bbwFilter:bw,rr}));return out;}
+const KEYS=['requireZone','requireHTF','sessLN','roomFilter','pullback','extFilter','bbwFilter'];
+const cKey=c=>KEYS.map(k=>+!!c[k]).join('')+'|'+c.rr;
+function runCombos(bars2,tfk,htf,combos,prog){const splitT=bars2[Math.floor(bars2.length*(1-OOS))].t;
+  return new Promise(res=>{const out=[];let i=0;
   const step=()=>{const t0=performance.now();while(i<combos.length&&performance.now()-t0<50){const c=combos[i++];
-      const r=WaddeySZ.compute(bars2,Object.assign({},cfg,c,{tfSec:TFS[tfk],htf}),bars2.length);out.push(Object.assign({c},optStats(r,c.rr)));}
+      const r=WaddeySZ.compute(bars2,Object.assign({},cfg,c,{tfSec:TFS[tfk],htf}),bars2.length);out.push(Object.assign({c},optStats(r,c.rr,splitT)));}
     prog(i,combos.length);if(i<combos.length)setTimeout(step,0);else res(out);};step();});}
 function dataInfo(b2,tfk){const days=b2.length>1?(b2[b2.length-1].t-b2[0].t)/86400:0;return `${tfk}: ${b2.length} candle (${days.toFixed(0)} hari)`;}
+function lock(on){optRunning=on;$('optRun').disabled=$('optAll').disabled=on;}
 async function runOpt(){if(optRunning)return;if(!bars.length||busy||barsTf!==tf||barsSym!==sym){$('optProg').textContent='⏳ Data '+tf+' masih dimuatkan. Tunggu 2-3 saat dan tekan semula.';return;}
-  optRunning=true;$('optRun').disabled=$('optAll').disabled=true;
+  lock(true);
   try{const len=+$('optLen').value;$('optProg').textContent='Memuatkan '+len+' candle '+tf+'…';
     let b2=len<=1600?bars:await longHistory(tf,len);if(b2.length<200)b2=bars;
-    const htf=await htfFor(tf).catch(()=>null);const combos=makeCombos(tf,!!htf,true);
-    const res=await runCombos(b2,tf,htf,combos,(i,n)=>$('optProg').textContent=`Menguji ${i}/${n}…`);
-    optRes=res;optMode='one';$('optInfo').textContent=`${symName()} · ${dataInfo(b2,tf)}`;$('optProg').textContent='Siap ✓';renderOpt();
-  }catch(e){$('optProg').textContent='Gagal: '+e.message;}finally{optRunning=false;$('optRun').disabled=$('optAll').disabled=false;}}
-async function runOptAll(){if(optRunning)return;optRunning=true;$('optRun').disabled=$('optAll').disabled=true;
-  try{const len=+$('optLen').value,TFL=['M5','M15','H1'],per={};const info=[];let base=null;
+    const htf=await htfFor(tf).catch(()=>null);const combos=makeCombos(tf,!!htf);
+    optRes=await runCombos(b2,tf,htf,combos,(i,n)=>$('optProg').textContent=`Menguji ${i}/${n}…`);
+    optMode='one';$('optInfo').textContent=`${symName()} · ${dataInfo(b2,tf)} · 70% lama / 30% baru`;$('optProg').textContent='Siap ✓';renderOpt();
+  }catch(e){$('optProg').textContent='Gagal: '+e.message;}finally{lock(false);}}
+async function runOptAll(){if(optRunning)return;lock(true);
+  try{const len=+$('optLen').value,TFL=['M5','M15','H1'],per={},info=[];let base=null;
     for(const tk of TFL){$('optProg').textContent=`Memuatkan data ${tk}…`;const b2=await longHistory(tk,len);if(b2.length<200)throw new Error('data '+tk+' tak cukup');
-      const htf=await htfFor(tk).catch(()=>null);if(!base)base=makeCombos('M5',true,false);
+      const htf=await htfFor(tk).catch(()=>null);if(!base)base=makeCombos('M5',true);
       const res=await runCombos(b2,tk,htf,base,(i,n)=>$('optProg').textContent=`${tk}: menguji ${i}/${n}…`);
       per[tk]={};res.forEach(x=>per[tk][cKey(x.c)]=x);info.push(dataInfo(b2,tk));}
-    optRes=base.map(c=>{const k=cKey(c),rows=TFL.map(t=>per[t][k]);return{c,tfs:rows,minR:Math.min(...rows.map(x=>x.net)),sumR:rows.reduce((a,x)=>a+x.net,0),
-      wr:rows.reduce((a,x)=>a+x.wr,0)/rows.length,n:Math.min(...rows.map(x=>x.n)),pf:Math.min(...rows.map(x=>x.pf)),maxS:Math.max(...rows.map(x=>x.maxS))};});
-    optMode='all';$('optInfo').textContent=symName()+' · '+info.join(' · ');$('optProg').textContent='Siap ✓';renderOpt();
-  }catch(e){$('optProg').textContent='Gagal: '+e.message;}finally{optRunning=false;$('optRun').disabled=$('optAll').disabled=false;}}
-function comboName(c){const p=[];if(c.requireZone)p.push('Zon');if(c.requireBBMA)p.push('BBMA');if(c.requireHTF)p.push('TF besar');if(c.asiaFilter)p.push('Tanpa sesi Asia');return p.length?'EMA + '+p.join(' + '):'EMA sahaja';}
-const isCur=c=>['requireZone','requireBBMA','requireHTF','asiaFilter','slStruct'].every(k=>!!cfg[k]===!!c[k])&&+cfg.rr===+c.rr&&+(cfg.beR||0)===+c.beR;
+    optRes=base.map(c=>{const k=cKey(c),rows=TFL.map(t=>per[t][k]);return{c,tfs:rows,minR:Math.min(...rows.map(x=>x.net)),minOos:Math.min(...rows.map(x=>x.oos.net)),
+      wr:rows.reduce((a,x)=>a+x.wr,0)/3,wrO:rows.reduce((a,x)=>a+x.oos.wr,0)/3,n:Math.min(...rows.map(x=>x.n)),pf:Math.min(...rows.map(x=>x.pf)),maxS:Math.max(...rows.map(x=>x.maxS))};});
+    optMode='all';$('optInfo').textContent=symName()+' · '+info.join(' · ')+' · 70% lama / 30% baru';$('optProg').textContent='Siap ✓';renderOpt();
+  }catch(e){$('optProg').textContent='Gagal: '+e.message;}finally{lock(false);}}
+function comboName(c){const p=[];if(c.requireZone)p.push('Zon');if(c.requireHTF)p.push('TF besar');if(c.requireBBMA)p.push('BBMA');if(c.sessLN)p.push('London+NY');if(c.asiaFilter)p.push('Tanpa Asia');
+  if(c.roomFilter)p.push('Ruang ke TP');if(c.pullback)p.push('Pullback');if(c.extFilter)p.push('Tak terlalu jauh');if(c.bbwFilter)p.push('BB tak sempit');return p.length?'EMA + '+p.join(' + '):'EMA sahaja';}
+const isCur=c=>KEYS.every(k=>!!cfg[k]===!!c[k])&&+cfg.rr===+c.rr&&!cfg.requireBBMA&&!cfg.slStruct&&!(+cfg.beR);
 const wrC=v=>v>=50?'bull':v>=35?'gold':'bear',rC=v=>v>=0?'bull':'bear',pfC=v=>v>=1.3?'bull':v>=1?'gold':'bear',fR=v=>(v>=0?'+':'')+v.toFixed(1)+'R';
+const pass=x=>x.net>0&&x.oos.net>0;
 function renderOpt(){if(!optRes.length)return;const mn=+$('optMin').value||0,key=$('optSort').value;
   if(optMode==='all'){
-    $('optHead').innerHTML='<tr><th>#</th><th>Gabungan penapis</th><th>SL</th><th>TP</th><th>BE</th><th>M5</th><th>M15</th><th>H1</th><th>Paling teruk</th><th>Rugi berturut</th><th></th></tr>';
-    const rows=optRes.filter(x=>x.n>=mn).sort((a,b)=>key==='wr'?b.wr-a.wr||b.minR-a.minR:key==='pf'?b.pf-a.pf||b.minR-a.minR:b.minR-a.minR||b.sumR-a.sumR).slice(0,40);
-    $('optBody').innerHTML=rows.length?rows.map((x,j)=>`<tr${isCur(x.c)?' style="background:rgba(212,175,55,.08)"':''}><td class="k">${j+1}</td><td><b>${comboName(x.c)}</b>${isCur(x.c)?' <span class="pill n">semasa</span>':''}${x.minR>0?' <span class="pill b">konsisten</span>':''}</td>
-      <td>${x.c.slStruct?'Struktur':'ATR'}</td><td>${x.c.rr}R</td><td>${x.c.beR?'1R':'—'}</td>
-      ${x.tfs.map(t=>`<td><b class="${rC(t.net)}">${fR(t.net)}</b><div class="k"><span class="${wrC(t.wr)}">${t.wr.toFixed(0)}%</span> · ${t.n} sig · PF ${t.pf>=99?'∞':t.pf.toFixed(2)}</div></td>`).join('')}
-      <td class="${rC(x.minR)}"><b>${fR(x.minR)}</b></td><td>${x.maxS}</td><td><button class="jbtn" data-oi="${optRes.indexOf(x)}">Guna</button></td></tr>`).join('')
-     :`<tr><td colspan="11" class="k">Tiada gabungan dengan sekurang-kurangnya ${mn} signal di setiap TF.</td></tr>`;return;}
-  $('optHead').innerHTML='<tr><th>#</th><th>Gabungan penapis</th><th>SL</th><th>TP</th><th>BE</th><th>Signal</th><th>Menang</th><th>Jumlah R</th><th>PF</th><th>Rugi berturut</th><th></th></tr>';
-  const rows=optRes.filter(x=>x.n>=mn).sort((a,b)=>key==='wr'?b.wr-a.wr||b.net-a.net:key==='pf'?b.pf-a.pf||b.net-a.net:b.net-a.net||b.wr-a.wr).slice(0,40);
-  $('optBody').innerHTML=rows.length?rows.map((x,j)=>`<tr${isCur(x.c)?' style="background:rgba(212,175,55,.08)"':''}><td class="k">${j+1}</td><td><b>${comboName(x.c)}</b>${isCur(x.c)?' <span class="pill n">semasa</span>':''}</td>
-    <td>${x.c.slStruct?'Struktur':'ATR'}</td><td>${x.c.rr}R</td><td>${x.c.beR?'1R':'—'}</td><td>${x.n}</td><td class="${wrC(x.wr)}"><b>${x.wr.toFixed(0)}%</b> <span class="k">${x.win}/${x.loss}${x.be?' · '+x.be+' BE':''}</span></td>
-    <td class="${rC(x.net)}"><b>${fR(x.net)}</b></td><td class="${pfC(x.pf)}">${x.pf>=99?'∞':x.pf.toFixed(2)}</td><td>${x.maxS}</td>
+    $('optHead').innerHTML='<tr><th>#</th><th>Gabungan penapis</th><th>TP</th><th>M5</th><th>M15</th><th>H1</th><th>Paling teruk<br><span class="k">lama → baru</span></th><th>Rugi berturut</th><th></th></tr>';
+    const sk=key==='wr'?(a,b)=>b.wr-a.wr||b.minR-a.minR:key==='pf'?(a,b)=>b.pf-a.pf||b.minR-a.minR:key==='oos'?(a,b)=>b.minOos-a.minOos||b.minR-a.minR:(a,b)=>b.minR-a.minR||b.minOos-a.minOos;
+    const rows=optRes.filter(x=>x.n>=mn).sort(sk).slice(0,40);
+    $('optBody').innerHTML=rows.length?rows.map((x,j)=>{const ok=x.minR>0&&x.minOos>0;return `<tr${isCur(x.c)?' style="background:rgba(212,175,55,.08)"':''}><td class="k">${j+1}</td><td><b>${comboName(x.c)}</b>${isCur(x.c)?' <span class="pill n">semasa</span>':''}${ok?' <span class="pill b">lulus data baru</span>':x.minR>0?' <span class="pill s">gagal data baru</span>':''}</td>
+      <td>${x.c.rr}R</td>
+      ${x.tfs.map(t=>`<td><b class="${rC(t.net)}">${fR(t.net)}</b> <span class="k"><span class="${wrC(t.wr)}">${t.wr.toFixed(0)}%</span> · ${t.n} sig · PF ${t.pf>=99?'∞':t.pf.toFixed(2)}</span><div class="k">baru: <b class="${rC(t.oos.net)}">${fR(t.oos.net)}</b> · <span class="${wrC(t.oos.wr)}">${t.oos.wr.toFixed(0)}%</span> · ${t.oos.n} sig</div></td>`).join('')}
+      <td><b class="${rC(x.minR)}">${fR(x.minR)}</b> → <b class="${rC(x.minOos)}">${fR(x.minOos)}</b></td><td>${x.maxS}</td><td><button class="jbtn" data-oi="${optRes.indexOf(x)}">Guna</button></td></tr>`;}).join('')
+     :`<tr><td colspan="9" class="k">Tiada gabungan dengan sekurang-kurangnya ${mn} signal (data lama) di setiap TF.</td></tr>`;return;}
+  $('optHead').innerHTML='<tr><th>#</th><th>Gabungan penapis</th><th>TP</th><th>Signal</th><th>Menang<br><span class="k">data lama</span></th><th>Jumlah R<br><span class="k">data lama</span></th><th>PF</th><th>Data baru<br><span class="k">menang · R</span></th><th>Rugi berturut</th><th></th></tr>';
+  const sk=key==='wr'?(a,b)=>b.wr-a.wr||b.net-a.net:key==='pf'?(a,b)=>b.pf-a.pf||b.net-a.net:key==='oos'?(a,b)=>b.oos.net-a.oos.net||b.net-a.net:(a,b)=>b.net-a.net||b.oos.net-a.oos.net;
+  const rows=optRes.filter(x=>x.n>=mn).sort(sk).slice(0,40);
+  $('optBody').innerHTML=rows.length?rows.map((x,j)=>`<tr${isCur(x.c)?' style="background:rgba(212,175,55,.08)"':''}><td class="k">${j+1}</td><td><b>${comboName(x.c)}</b>${isCur(x.c)?' <span class="pill n">semasa</span>':''}${pass(x)?' <span class="pill b">lulus data baru</span>':x.net>0?' <span class="pill s">gagal data baru</span>':''}</td>
+    <td>${x.c.rr}R</td><td>${x.n}</td><td class="${wrC(x.wr)}"><b>${x.wr.toFixed(0)}%</b> <span class="k">${x.win}/${x.loss}</span></td>
+    <td class="${rC(x.net)}"><b>${fR(x.net)}</b></td><td class="${pfC(x.pf)}">${x.pf>=99?'∞':x.pf.toFixed(2)}</td>
+    <td><span class="${wrC(x.oos.wr)}"><b>${x.oos.wr.toFixed(0)}%</b></span> · <b class="${rC(x.oos.net)}">${fR(x.oos.net)}</b> <span class="k">(${x.oos.n} sig)</span></td><td>${x.maxS}</td>
     <td><button class="jbtn" data-oi="${optRes.indexOf(x)}">Guna</button></td></tr>`).join('')
-   :`<tr><td colspan="11" class="k">Tiada gabungan dengan sekurang-kurangnya ${mn} signal. Kurangkan "Signal minimum" atau pilih data lebih panjang.</td></tr>`;}
+   :`<tr><td colspan="10" class="k">Tiada gabungan dengan sekurang-kurangnya ${mn} signal. Kurangkan "Signal minimum" atau pilih data lebih panjang.</td></tr>`;}
 $('optRun').onclick=runOpt;$('optAll').onclick=runOptAll;$('optSort').onchange=renderOpt;$('optMin').oninput=renderOpt;
 $('optBody').addEventListener('click',e=>{const b=e.target.closest('[data-oi]');if(!b)return;const c=optRes[+b.dataset.oi].c;
   Object.assign(cfg,c);store.set('cfg',cfg);buildSet();renderOpt();refresh(true);
-  banner('Setting baru dipakai: '+comboName(c)+' · SL '+(c.slStruct?'struktur':'ATR')+' · TP '+c.rr+'R'+(c.beR?' · BE 1R':''));});
+  banner('Setting baru dipakai: '+comboName(c)+' · TP '+c.rr+'R');});
 
 // ---------- TAB BAWAH
 function showTab(t){[...$('tabbar').children].forEach(b=>b.classList.toggle('on',b.dataset.t===t));document.querySelectorAll('.tpane').forEach(p=>p.hidden=p.dataset.p!==t);store.set('tab',t);if(t==='lot')renderLot();if(t==='news')renderNews();}
@@ -833,7 +845,7 @@ $('sym').onchange=async()=>{sym=$('sym').value;store.set('sym',sym);if(tickSub){
 
 // ---------- setting
 const F=[['Signal','h'],['rr','Risk:Reward (TP akhir)','n'],['slStruct','SL ikut struktur (swing / zon)','b'],['beR','Breakeven: alih SL ke Entry selepas untung X R (0 = tiada)','n'],['slMult','SL multiplier (x ATR, bila SL struktur off)','n'],['structBars','SL struktur: cari swing dalam X candle','n'],['emaFast','Fast EMA','n'],['emaSlow','Slow EMA','n'],['confirm','Wajib candle pengesahan','b'],
- ['Penapis','h'],['requireZone','Wajib: signal di zon Supply/Demand','b'],['requireBBMA','Wajib: signal searah trend BBMA','b'],['requireHTF','Wajib: TF besar searah (EMA 5/13)','b'],['zoneBars','Zon disentuh dalam X bar','n'],
+ ['Penapis','h'],['requireZone','Wajib: signal di zon Supply/Demand','b'],['requireBBMA','Wajib: signal searah trend BBMA','b'],['requireHTF','Wajib: TF besar searah (EMA 5/13)','b'],['roomFilter','Ruang ke TP: tiada zon lawan sebelum TP','b'],['pullback','Entry pullback (tunggu harga tarik balik)','b'],['sessLN','Sesi London + New York sahaja (15:00–01:00 MYT)','b'],['extFilter','Buang signal bila harga terlalu jauh','b'],['bbwFilter','Buang signal bila Bollinger Band terlalu sempit','b'],['zoneBars','Zon disentuh dalam X bar','n'],
  ['Zon','h'],['maxSupply','Max zon Supply','n'],['maxDemand','Max zon Demand','n'],['minZH','Tinggi zon minimum (x ATR)','n'],['maxZH','Tinggi zon maksimum (x ATR)','n'],
  ['BBMA','h'],['bbLen','Bollinger period','n'],['bbDev','Bollinger deviation','n'],['bbEma','EMA trend','n'],['reCooldown','Jarak minimum RE (bar)','n'],
  ['Sesi','h'],['asiaFilter','Sembunyi signal sesi Asia (08:00–15:00 MYT, TF H1 ke bawah)','b'],
