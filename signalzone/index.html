@@ -186,6 +186,7 @@ body.fsOn{overflow:hidden}body.fsOn nav.bnav{display:none}
 }
 @media (max-width:1099px){.tabbar .tl{display:none}.tabbar .tl2{display:inline}}
 @media (max-width:560px){.pricebar{grid-template-columns:1fr 1fr}.pricebar .tf3{display:none}.checks{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.tgrid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:700px){.chartcard>.ttl{flex-wrap:wrap;row-gap:6px}#setupF{margin-left:0!important;flex-basis:100%;order:9}}
 </style>
 </head>
 <body>
@@ -246,7 +247,7 @@ body.fsOn{overflow:hidden}body.fsOn nav.bnav{display:none}
       <div class="tog" id="tog">
         <button data-k="ema" class="on">EMA</button><button data-k="bb" class="on">BB</button><button data-k="ma">MA5/10</button>
         <button data-k="e50" class="on">EMA50</button><button data-k="zone" class="on">Zon</button><button data-k="setup" class="on">Setup</button>
-      </div>
+      </div><select id="setupF" title="Tapis setup BBMA di chart" style="margin-left:6px;padding:4px 6px;font-size:12px"><option value="all">Setup: semua</option><option value="trend">Searah trend</option><option value="g2">★★ ke atas</option><option value="g3">★★★ sahaja</option><option value="len">Lengkap sahaja</option></select>
     </div>
     <div class="card" id="chartWrap"><div id="chart"></div><canvas id="ov"></canvas></div>
     <div class="legend">
@@ -270,7 +271,8 @@ body.fsOn{overflow:hidden}body.fsOn nav.bnav{display:none}
       <div class="help">Jarak diukur dari harga sekarang. STRONG = zon paling dipercayai.</div></div>
     <!-- BBMA -->
     <div class="card"><div class="ttl"><h2>BBMA</h2><span class="sp"></span><span id="bbTrend" class="pill n">—</span></div>
-      <div id="bbState" style="margin-bottom:8px"></div><div class="k" style="margin-bottom:4px">Setup terkini</div><div id="bbSetups"></div></div>
+      <div id="bbState" style="margin-bottom:8px"></div><div class="k" style="margin-bottom:4px">Setup terkini <span class="k">(★ = gred: TF besar searah, di zon, dekat EMA50)</span></div><div id="bbSetups"></div>
+      <div class="k" style="margin:10px 0 4px">Kadar menang setiap setup <span class="k">(data di chart · SL 1 ATR, TP 1 ATR, dalam 30 candle)</span></div><div id="bbStats"></div></div>
   </div>
 
     </div>
@@ -321,13 +323,14 @@ body.fsOn{overflow:hidden}body.fsOn nav.bnav{display:none}
     <div class="tpane" data-p="opt" hidden>
       <div class="card">
         <div class="ttl"><h2>Uji strategi (backtest pantas)</h2><span class="sp"></span><span id="optInfo" class="k"></span></div>
-        <div class="help" style="margin-top:0">Dashboard kira semula semua signal dari data lepas untuk setiap gabungan penapis (Zon, TF besar, London+NY, Ruang ke TP, Pullback, Tak terlalu jauh, BB tak sempit) dan <b>TP 1R / 1.5R / 2R</b>. Data dibahagi dua: <b>70% lama</b> untuk memilih, <b>30% baru</b> untuk mengesahkan. Gabungan bertanda <b>"lulus data baru"</b> paling boleh dipercayai. <b>Jalankan ujian</b> = TF semasa sahaja. <b>Uji semua TF</b> = M5, M15 dan H1 serentak, disusun ikut keputusan <b>paling teruk</b> di antara ketiga-tiganya (gabungan "konsisten" = untung di semua TF). Tekan <b>Guna</b> untuk pakai setting tu terus.</div>
+        <div class="help" style="margin-top:0">Dashboard kira semula semua signal dari data lepas untuk setiap gabungan penapis (Zon, TF besar, London+NY, Ruang ke TP, Pullback, Tak terlalu jauh, BB tak sempit) dan <b>TP 1R / 1.5R / 2R</b>. Data dibahagi dua: <b>70% lama</b> untuk memilih, <b>30% baru</b> untuk mengesahkan. Gabungan bertanda <b>"lulus data baru"</b> paling boleh dipercayai. <b>Jalankan ujian</b> = TF semasa sahaja. <b>Uji semua TF</b> = M5, M15 dan H1 serentak, disusun ikut keputusan <b>paling teruk</b> di antara ketiga-tiganya (gabungan "konsisten" = untung di semua TF). Tekan <b>Guna</b> untuk pakai setting tu terus.<br><b>Pencetus entry</b>: pilih apa yang buka trade. Untuk pencetus setup BBMA, ujian juga cuba <b>gred minimum ★ / ★★ / ★★★</b>. "Banding semua pencetus" uji kelima-lima pencetus dengan penapis utama (Pullback, Tak terlalu jauh, TF besar) supaya cepat.</div>
         <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap">
           <button id="optRun" style="background:var(--gold);color:#0b0d12;font-weight:800;border:0;padding:9px 16px">▶ Jalankan ujian</button>
           <label class="k" style="display:flex;gap:6px;align-items:center">Susun ikut
             <select id="optSort"><option value="r">Jumlah R (data lama)</option><option value="oos">Jumlah R (data baru)</option><option value="wr">Kadar menang</option><option value="pf">Profit factor</option></select></label>
           <label class="k" style="display:flex;gap:6px;align-items:center">Signal minimum <input id="optMin" type="number" value="20" style="width:64px"></label>
           <label class="k" style="display:flex;gap:6px;align-items:center">Panjang data <select id="optLen"><option value="1500">≈1,500 candle</option><option value="3000" selected>≈3,000 candle</option><option value="6000">≈6,000 candle</option></select></label>
+          <label class="k" style="display:flex;gap:6px;align-items:center">Pencetus entry <select id="optSrc"><option value="ema">EMA 5/13 (kaedah sekarang)</option><option value="re">RE BBMA</option><option value="csa_ext">CSA selepas EXT</option><option value="ema_re">EMA + RE</option><option value="lengkap">BBMA lengkap (EXT→MHV→CSA→RE)</option><option value="allsrc">⭐ Banding semua pencetus</option></select></label>
           <button id="optAll" style="font-weight:800">⚡ Uji semua TF (M5 + M15 + H1)</button>
           <span id="optProg" class="k"></span>
         </div>
@@ -383,7 +386,7 @@ body.fsOn{overflow:hidden}body.fsOn nav.bnav{display:none}
     </div>
   </section>
 
-  <div class="foot">Versi dashboard: <b>v14 · 27 Nov</b><br>Data harga: Deriv (mungkin berbeza sedikit dengan broker MT5). Semua signal dikira selepas candle tutup.<br>Alat bantuan analisis, bukan nasihat kewangan.</div>
+  <div class="foot">Versi dashboard: <b>v15 · 27 Nov</b><br>Data harga: Deriv (mungkin berbeza sedikit dengan broker MT5). Semua signal dikira selepas candle tutup.<br>Alat bantuan analisis, bukan nasihat kewangan.</div>
 </main>
 
 <dialog id="jDlg"><form method="dialog">
@@ -410,10 +413,11 @@ const $=id=>document.getElementById(id);
 const store={get(k,d){try{const v=localStorage.getItem('wsz_'+k);return v==null?d:JSON.parse(v);}catch(e){return d;}},set(k,v){try{localStorage.setItem('wsz_'+k,JSON.stringify(v));}catch(e){}}};
 // Kaedah pilihan (#4 dari Uji Strategi): EMA + Pullback + Tak terlalu jauh, TP 1.5R
 const METHOD={requireZone:false,requireBBMA:false,requireHTF:false,asiaFilter:false,sessLN:false,roomFilter:false,bbwFilter:false,slStruct:false,beR:0,pullback:true,extFilter:true,rr:1.5};
-const DASH_DEF=Object.assign({},WaddeySZ.DEF,METHOD);
+const DASH_DEF=Object.assign({},WaddeySZ.DEF,{setupAlert:'off'},METHOD);
 if(store.get('cfgVer',0)<2){const old=store.get('cfg',{});store.set('cfg',Object.assign({},old,METHOD));store.set('cfgVer',2);}
-let sym=store.get('sym','frxXAUUSD'),tf=store.get('tf','M5'),cfg=Object.assign({},DASH_DEF,store.get('cfg',{})),show=Object.assign({ema:true,bb:true,ma:false,e50:true,zone:true,setup:true},store.get('show',{}));
+let sym=store.get('sym','frxXAUUSD'),tf=store.get('tf','M5'),cfg=Object.assign({},DASH_DEF,store.get('cfg',{})),show=Object.assign({ema:true,bb:true,ma:false,e50:true,zone:true,setup:true,setupF:'all'},store.get('show',{}));
 let ws=null,ep=0,rid=1,pend=new Map(),tickSub=null,srvOff=0,R=null,bars=[],all=[],busy=false,cur=null,live=null,dayOpen=null;
+if(cfg.setupAlert==null||(cfg.alertBB&&cfg.setupAlert==='off'&&!store.get('saMig',0))){cfg.setupAlert=cfg.alertBB?'all':'off';store.set('saMig',1);}
 let lastAlertKey=store.get('lastAlert',''),mtfData={},mtfAt=0;
 $('sym').value=sym;
 
@@ -479,6 +483,7 @@ function setLines(){const S=R.S,T=R.T;const mk=a=>a.map((v,i)=>i>=S+2?{time:T[i]
   const vis={ef:show.ema,es:show.ema,up:show.bb,md:show.bb,lo:show.bb,mhf:show.ma,mhs:show.ma,mlf:show.ma,mls:show.ma,e50:show.e50};
   const src={ef:R.EF,es:R.ES,up:R.UP,md:R.MD,lo:R.LO,mhf:R.MHF,mhs:R.MHS,mlf:R.MLF,mls:R.MLS,e50:R.E50};
   for(const k in ln){ln[k].setData(mk(src[k]));ln[k].applyOptions({visible:vis[k]});}}
+const setupOK=x=>{const f=show.setupF||'all';return f==='trend'?!!x.tr:f==='g2'?x.grade>=2:f==='g3'?x.grade>=3:f==='len'?!!x.lengkap:true;};
 function setMarkers(){const m=[];const from=R.T[Math.max(R.S,R.T.length-400)];
   R.marks.forEach(x=>{if(x.t<from)return;
     if(x.type==='buy')m.push({time:x.t,position:'belowBar',color:'#22c55e',shape:'arrowUp',text:'BUY'+(x.tags.length?' · '+x.tags.join(' · '):'')});
@@ -488,8 +493,8 @@ function setMarkers(){const m=[];const from=R.T[Math.max(R.S,R.T.length-400)];
     else if(x.type==='be')m.push({time:x.t,position:'aboveBar',color:'#94a3b8',shape:'circle',text:'BE'});
     else if(x.type==='inv')m.push({time:x.t,position:'aboveBar',color:'#facc15',shape:'square',text:x.txt});
     else if(x.type==='tpn')m.push({time:x.t,position:'aboveBar',color:'#86efac',shape:'circle',text:x.txt});
-    else if(show.setup&&x.type==='bbB')m.push({time:x.t,position:'belowBar',color:'#14b8a6',shape:'circle',text:x.txt});
-    else if(show.setup&&x.type==='bbS')m.push({time:x.t,position:'aboveBar',color:'#f472b6',shape:'circle',text:x.txt});});
+    else if(show.setup&&x.type==='bbB'&&setupOK(x))m.push({time:x.t,position:'belowBar',color:x.lengkap?'#facc15':'#14b8a6',shape:x.lengkap?'arrowUp':'circle',text:x.txt});
+    else if(show.setup&&x.type==='bbS'&&setupOK(x))m.push({time:x.t,position:'aboveBar',color:x.lengkap?'#facc15':'#f472b6',shape:x.lengkap?'arrowDown':'circle',text:x.txt});});
   m.sort((a,b)=>a.time-b.time);cs.setMarkers(m);
   plines.forEach(p=>cs.removePriceLine(p));plines=[];
   if(R.pend&&!R.pos){const q=R.pend;plines.push(cs.createPriceLine({price:q.level,color:'#d4af37',lineWidth:2,lineStyle:1,axisLabelVisible:true,title:(q.dir>0?'Pullback BUY':'Pullback SELL')}));}
@@ -497,6 +502,7 @@ function setMarkers(){const m=[];const from=R.T[Math.max(R.S,R.T.length-400)];
     L2.forEach(([t,v,c,s])=>plines.push(cs.createPriceLine({price:v,color:c,lineWidth:1,lineStyle:s,axisLabelVisible:true,title:t})));}}
 $('tog').onclick=e=>{const b=e.target.closest('button');if(!b)return;const k=b.dataset.k;show[k]=!show[k];b.classList.toggle('on',show[k]);store.set('show',show);if(R){setLines();setMarkers();drawOv();}};
 [...$('tog').children].forEach(b=>b.classList.toggle('on',!!show[b.dataset.k]));
+$('setupF').value=show.setupF||'all';$('setupF').onchange=e=>{show.setupF=e.target.value;store.set('show',show);if(R)setMarkers();};
 
 // ---------- analisis ala trader pro
 function session(){const h=new Date(nowS()*1000).getUTCHours();
@@ -565,9 +571,16 @@ function render(){const k=R.C.length-1,an=analyse();
   const pos=c>R.UP[k]?'di luar BB Atas':c<R.LO[k]?'di luar BB Bawah':c>R.MD[k]?'antara BB Tengah dan BB Atas':'antara BB Tengah dan BB Bawah';
   $('bbState').innerHTML=`<div class="srow" style="border:0;padding-top:0"><span class="k">Band</span><b>${w>w1*1.05?'Mengembang ↗':w<w1*0.95?'Mengecil ↘':'Stabil →'}</b></div>
    <div class="srow"><span class="k">Harga</span><b>${pos}</b></div><div class="srow"><span class="k">EMA 50</span><b class="${c>R.E50[k]?'bull':'bear'}">${fx(R.E50[k])} (${c>R.E50[k]?'harga atas':'harga bawah'})</b></div>`;
-  const sets=R.marks.filter(x=>x.type==='bbB'||x.type==='bbS').slice(-6).reverse();
-  const meaning={EXT:'harga terlampau jauh',MOM:'momentum kuat',CSA:'arah baru',RE:'masuk semula ikut trend'};
-  $('bbSetups').innerHTML=sets.length?sets.map(x=>`<div class="setup"><span><b class="${x.type==='bbB'?'bull':'bear'}">${x.type==='bbB'?'BUY':'SELL'} ${x.txt}</b> <span class="k">${x.txt.split(' ').map(t=>meaning[t]).join(', ')}</span></span><span class="k">${ago(x.t)}</span></div>`).join(''):'<div class="k">Tiada setup dalam data semasa.</div>';
+  const sets=R.marks.filter(x=>(x.type==='bbB'||x.type==='bbS')&&setupOK(x)).slice(-6).reverse();
+  const meaning={EXT:'harga terlampau jauh',MHV:'gagal tembus BB (momentum habis)',MOM:'momentum kuat',CSA:'arah baru',RE:'masuk semula ikut trend',LENGKAP:'turutan penuh EXT→MHV→CSA→RE'};
+  const whyTxt=x=>x.why?[x.why.htf?'TF besar searah':'',x.why.zone?(x.type==='bbB'?'di Demand':'di Supply'):'',x.why.near?'dekat EMA50':''].filter(Boolean).join(' · '):'';
+  const resTxt=x=>x.res===1?'<span class="bull">✓ +1R</span>':x.res===-1?'<span class="bear">✗ -1R</span>':x.res===0?'<span class="k">tiada keputusan</span>':'<span class="k">berjalan</span>';
+  $('bbSetups').innerHTML=sets.length?sets.map(x=>`<div class="setup"><span><b class="${x.lengkap?'gold':x.type==='bbB'?'bull':'bear'}">${x.lengkap?'⭐ ':''}${x.type==='bbB'?'BUY':'SELL'} ${x.txt}</b> <span class="k">${x.list.map(t=>meaning[t]).join(', ')}${whyTxt(x)?'<br>'+whyTxt(x):''}</span></span><span class="k" style="text-align:right">${ago(x.t)}<br>${resTxt(x)}</span></div>`).join(''):'<div class="k">Tiada setup (ikut tapisan chart) dalam data semasa.</div>';
+  // kadar menang setiap setup (SL 1 ATR, TP 1 ATR, dalam 30 candle)
+  const agg={};R.marks.forEach(x=>{if((x.type!=='bbB'&&x.type!=='bbS')||x.res==null||x.res===0)return;x.list.forEach(n=>{const a=agg[n]=agg[n]||{b:[0,0],s:[0,0],g3:[0,0]};const side=x.type==='bbB'?a.b:a.s;side[1]++;if(x.res===1)side[0]++;if(x.grade>=3){a.g3[1]++;if(x.res===1)a.g3[0]++;}});});
+  const cell=v=>v[1]?`<b class="${v[0]/v[1]>=.55?'bull':v[0]/v[1]>=.45?'gold':'bear'}">${Math.round(v[0]/v[1]*100)}%</b> <span class="k">(${v[1]})</span>`:'<span class="k">—</span>';
+  const ord=['LENGKAP','EXT','MHV','CSA','RE','MOM'].filter(n=>agg[n]);
+  $('bbStats').innerHTML=ord.length?`<table style="font-size:12px"><thead><tr><th>Setup</th><th>BUY</th><th>SELL</th><th>★★★</th></tr></thead><tbody>${ord.map(n=>`<tr><td><b>${n==='LENGKAP'?'⭐ Lengkap':n}</b></td><td>${cell(agg[n].b)}</td><td>${cell(agg[n].s)}</td><td>${cell(agg[n].g3)}</td></tr>`).join('')}</tbody></table>`:'<div class="k">Belum cukup data.</div>';
   renderPerf();renderMTF();renderLot();renderNews();renderMethod();if(!$('viewSimple').hidden)renderSimple();}
 
 function pendHtml(){const q=R&&R.pend;if(!q)return'';const d=q.dir,c=live??R.C[R.C.length-1],dist=Math.abs(c-q.level);
@@ -709,11 +722,16 @@ function optStats(r,rr,splitT){const o=outcomes(r,rr).filter(x=>x.res!=='run');
   const is=statOf(o.filter(x=>x.t<splitT),rr),oos=statOf(o.filter(x=>x.t>=splitT),rr),all=statOf(o,rr);
   return Object.assign({},is,{oos,all,maxS:all.maxS});}
 const BASEF={requireBBMA:false,beR:0,slStruct:false,asiaFilter:false};
-function makeCombos(tfk,hasHtf){const sessOK=TFS[tfk]<=3600,out=[];
-  for(const z of[false,true])for(const h of(hasHtf?[false,true]:[false]))for(const sl of(sessOK?[false,true]:[false]))for(const rm of[false,true])for(const pb of[false,true])for(const ex of[false,true])for(const bw of[false,true])for(const rr of RRS)
-    out.push(Object.assign({},BASEF,{requireZone:z,requireHTF:h,sessLN:sl,roomFilter:rm,pullback:pb,extFilter:ex,bbwFilter:bw,rr}));return out;}
+const SRCS=['ema','re','csa_ext','ema_re','lengkap'];
+function makeCombos(tfk,hasHtf,src){const sessOK=TFS[tfk]<=3600,out=[];src=src||'ema';
+  if(src==='allsrc'){   // banding semua pencetus: penapis utama sahaja supaya cepat
+    for(const es of SRCS)for(const mg of(es==='ema'?[1]:[1,2,3]))for(const h of(hasHtf?[false,true]:[false]))for(const pb of[false,true])for(const ex of[false,true])for(const rr of RRS)
+      out.push(Object.assign({},BASEF,{entrySrc:es,minGrade:mg,requireZone:false,requireHTF:h,sessLN:false,roomFilter:false,pullback:pb,extFilter:ex,bbwFilter:false,rr}));return out;}
+  const isE=src==='ema';
+  for(const mg of(isE?[1]:[1,2,3]))for(const z of[false,true])for(const h of(hasHtf?[false,true]:[false]))for(const sl of(sessOK?[false,true]:[false]))for(const rm of[false,true])for(const pb of[false,true])for(const ex of[false,true])for(const bw of(isE?[false,true]:[false]))for(const rr of RRS)
+    out.push(Object.assign({},BASEF,{entrySrc:src,minGrade:mg,requireZone:z,requireHTF:h,sessLN:sl,roomFilter:rm,pullback:pb,extFilter:ex,bbwFilter:bw,rr}));return out;}
 const KEYS=['requireZone','requireHTF','sessLN','roomFilter','pullback','extFilter','bbwFilter'];
-const cKey=c=>KEYS.map(k=>+!!c[k]).join('')+'|'+c.rr;
+const cKey=c=>(c.entrySrc||'ema')+(c.minGrade||1)+'|'+KEYS.map(k=>+!!c[k]).join('')+'|'+c.rr;
 function runCombos(bars2,tfk,htf,combos,prog){const splitT=bars2[Math.floor(bars2.length*(1-OOS))].t;
   return new Promise(res=>{const out=[];let i=0;
   const step=()=>{const t0=performance.now();while(i<combos.length&&performance.now()-t0<50){const c=combos[i++];
@@ -725,23 +743,24 @@ async function runOpt(){if(optRunning)return;if(!bars.length||busy||barsTf!==tf|
   lock(true);
   try{const len=+$('optLen').value;$('optProg').textContent='Memuatkan '+len+' candle '+tf+'…';
     let b2=len<=1600?bars:await longHistory(tf,len);if(b2.length<200)b2=bars;
-    const htf=await htfFor(tf).catch(()=>null);const combos=makeCombos(tf,!!htf);
+    const htf=await htfFor(tf).catch(()=>null);const combos=makeCombos(tf,!!htf,$('optSrc').value);
     optRes=await runCombos(b2,tf,htf,combos,(i,n)=>$('optProg').textContent=`Menguji ${i}/${n}…`);
     optMode='one';$('optInfo').textContent=`${symName()} · ${dataInfo(b2,tf)} · 70% lama / 30% baru`;$('optProg').textContent='Siap ✓';renderOpt();
   }catch(e){$('optProg').textContent='Gagal: '+e.message;}finally{lock(false);}}
 async function runOptAll(){if(optRunning)return;lock(true);
   try{const len=+$('optLen').value,TFL=['M5','M15','H1'],per={},info=[];let base=null;
     for(const tk of TFL){$('optProg').textContent=`Memuatkan data ${tk}…`;const b2=await longHistory(tk,len);if(b2.length<200)throw new Error('data '+tk+' tak cukup');
-      const htf=await htfFor(tk).catch(()=>null);if(!base)base=makeCombos('M5',true);
+      const htf=await htfFor(tk).catch(()=>null);if(!base)base=makeCombos('M5',true,$('optSrc').value);
       const res=await runCombos(b2,tk,htf,base,(i,n)=>$('optProg').textContent=`${tk}: menguji ${i}/${n}…`);
       per[tk]={};res.forEach(x=>per[tk][cKey(x.c)]=x);info.push(dataInfo(b2,tk));}
     optRes=base.map(c=>{const k=cKey(c),rows=TFL.map(t=>per[t][k]);return{c,tfs:rows,minR:Math.min(...rows.map(x=>x.net)),minOos:Math.min(...rows.map(x=>x.oos.net)),
       wr:rows.reduce((a,x)=>a+x.wr,0)/3,wrO:rows.reduce((a,x)=>a+x.oos.wr,0)/3,n:Math.min(...rows.map(x=>x.n)),pf:Math.min(...rows.map(x=>x.pf)),maxS:Math.max(...rows.map(x=>x.maxS))};});
     optMode='all';$('optInfo').textContent=symName()+' · '+info.join(' · ')+' · 70% lama / 30% baru';$('optProg').textContent='Siap ✓';renderOpt();
   }catch(e){$('optProg').textContent='Gagal: '+e.message;}finally{lock(false);}}
+const srcName=c=>(WaddeySZ.SRC_NAME[c.entrySrc||'ema']||'EMA')+((c.entrySrc||'ema')!=='ema'&&+c.minGrade>1?' '+'★'.repeat(+c.minGrade)+(+c.minGrade<3?'+':''):'');
 function comboName(c){const p=[];if(c.requireZone)p.push('Zon');if(c.requireHTF)p.push('TF besar');if(c.requireBBMA)p.push('BBMA');if(c.sessLN)p.push('London+NY');if(c.asiaFilter)p.push('Tanpa Asia');
-  if(c.roomFilter)p.push('Ruang ke TP');if(c.pullback)p.push('Pullback');if(c.extFilter)p.push('Tak terlalu jauh');if(c.bbwFilter)p.push('BB tak sempit');return p.length?'EMA + '+p.join(' + '):'EMA sahaja';}
-const isCur=c=>KEYS.every(k=>!!cfg[k]===!!c[k])&&+cfg.rr===+c.rr&&!cfg.requireBBMA&&!cfg.slStruct&&!(+cfg.beR);
+  if(c.roomFilter)p.push('Ruang ke TP');if(c.pullback)p.push('Pullback');if(c.extFilter)p.push('Tak terlalu jauh');if(c.bbwFilter)p.push('BB tak sempit');const n=srcName(c);return p.length?n+' + '+p.join(' + '):n+' sahaja';}
+const isCur=c=>KEYS.every(k=>!!cfg[k]===!!c[k])&&+cfg.rr===+c.rr&&(cfg.entrySrc||'ema')===(c.entrySrc||'ema')&&((c.entrySrc||'ema')==='ema'||(+cfg.minGrade||1)===(+c.minGrade||1))&&!cfg.requireBBMA&&!cfg.slStruct&&!(+cfg.beR);
 const wrC=v=>v>=50?'bull':v>=35?'gold':'bear',rC=v=>v>=0?'bull':'bear',pfC=v=>v>=1.3?'bull':v>=1?'gold':'bear',fR=v=>(v>=0?'+':'')+v.toFixed(1)+'R';
 const pass=x=>x.net>0&&x.oos.net>0;
 function renderOpt(){if(!optRes.length)return;const mn=+$('optMin').value||0,key=$('optSort').value;
@@ -769,9 +788,9 @@ $('optBody').addEventListener('click',e=>{const b=e.target.closest('[data-oi]');
   banner('Setting baru dipakai: '+comboName(c)+' · TP '+c.rr+'R');});
 
 // ---------- KAEDAH AKTIF
-function methodParts(c){const p=[];p.push('EMA 5/13');if(c.pullback)p.push('Pullback');if(c.extFilter)p.push('Tak terlalu jauh');if(c.requireZone)p.push('Zon');if(c.requireHTF)p.push('TF besar');if(c.requireBBMA)p.push('BBMA');
+function methodParts(c){const p=[];p.push(srcName(c));if(c.pullback)p.push('Pullback');if(c.extFilter)p.push('Tak terlalu jauh');if(c.requireZone)p.push('Zon');if(c.requireHTF)p.push('TF besar');if(c.requireBBMA)p.push('BBMA');
   if(c.roomFilter)p.push('Ruang ke TP');if(c.sessLN)p.push('London+NY');if(c.asiaFilter)p.push('Tanpa Asia');if(c.bbwFilter)p.push('BB tak sempit');p.push('TP '+c.rr+'R');p.push(c.slStruct?'SL struktur':'SL ATR');if(+c.beR)p.push('BE '+c.beR+'R');return p;}
-function renderMethod(){const isM=Object.keys(METHOD).every(k=>(+cfg[k]||0)===(+METHOD[k]||0));
+function renderMethod(){const isM=Object.keys(METHOD).every(k=>(+cfg[k]||0)===(+METHOD[k]||0))&&(cfg.entrySrc||'ema')==='ema';
   const h='<span class="lab">Kaedah:</span>'+methodParts(cfg).map(x=>`<span>${x}</span>`).join('')+(isM?'<span style="color:var(--bull);border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.1)">✓ Kaedah #4</span>':'');
   $('vMethod').innerHTML=h;$('sMethod').innerHTML=h;}
 
@@ -909,7 +928,7 @@ async function loadMTF(force){if(!force&&Date.now()-mtfAt<120000)return;mtfAt=Da
 // ---------- notifikasi (bila app dibuka)
 function notify(){const f=R.last||{};let msg='';const k=R.T[R.T.length-1];
   if(f.buy||f.sell){const s=R.marks.filter(x=>x.k===R.T.length-1&&(x.type==='buy'||x.type==='sell')).pop();if(s)msg=`${s.txt}${s.tags.length?' ('+s.tags.join(', ')+')':''} @ ${fx(s.price)} | SL ${fx(s.sl)} | TP ${fx(s.tp)}`;}
-  else if(f.tp)msg='TP akhir kena ✅';else if(f.sl)msg='SL kena';else if(f.be)msg='Breakeven: trade ditutup di Entry (0R)';else if(cfg.alertBB&&f.bb)msg=f.bb.trim();
+  else if(f.tp)msg='TP akhir kena ✅';else if(f.sl)msg='SL kena';else if(f.be)msg='Breakeven: trade ditutup di Entry (0R)';else{const st=R.marks.filter(x=>x.k===R.T.length-1&&WaddeySZ.setupMatch(x,cfg.setupAlert)).pop();if(st)msg=`${st.lengkap?'⭐ Setup BBMA lengkap':'Setup BBMA'} ${st.type==='bbB'?'BUY':'SELL'} ${st.txt}`;}
   if(!msg)return;const key=sym+tf+k+msg;if(key===lastAlertKey)return;const first=lastAlertKey==='';lastAlertKey=key;store.set('lastAlert',key);if(first)return;
   const full=`${symName()} ${tf}: ${msg}`;banner('🔔 '+full);beep(f.sl?'sl':f.tp?'tp':'sig');
   try{navigator.vibrate&&navigator.vibrate([250,120,250]);}catch(e){}
@@ -924,7 +943,7 @@ async function refresh(force){if(busy){pendingRefresh=true;return;}busy=true;con
     if(tf!==myTf||sym!==mySym){pendingRefresh=true;return;}   // TF/simbol bertukar semasa memuatkan: buang data lama, muat semula
     all=got;const n=nowS();bars=all.filter(b=>b.t+TFS[tf]<=n+1);barsTf=tf;barsSym=sym;
     if(bars.length<80)throw new Error('data tak cukup');
-    const htf=cfg.requireHTF?await htfDirs():null;
+    const htf=await htfDirs().catch(()=>null);   // sentiasa ambil: perlu untuk gred setup BBMA
     R=WaddeySZ.compute(bars,Object.assign({},cfg,{tfSec:TFS[tf],htf}),1500);
     cs.setData(all.map(b=>({time:b.t,open:b.o,high:b.h,low:b.l,close:b.c})));
     const z=all[all.length-1];cur={time:z.t,open:z.o,high:z.h,low:z.l,close:z.c};
@@ -960,14 +979,14 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();
 $('sym').onchange=async()=>{sym=$('sym').value;store.set('sym',sym);if(tickSub){try{await send({forget:tickSub})}catch(e){}tickSub=null;}cur=null;live=null;lastTickAt=0;tickErr='';dayOpen=null;mtfData={};mtfAt=0;refresh(true);};
 
 // ---------- setting
-const F=[['Signal','h'],['rr','Risk:Reward (TP akhir)','n'],['slStruct','SL ikut struktur (swing / zon)','b'],['beR','Breakeven: alih SL ke Entry selepas untung X R (0 = tiada)','n'],['slMult','SL multiplier (x ATR, bila SL struktur off)','n'],['structBars','SL struktur: cari swing dalam X candle','n'],['emaFast','Fast EMA','n'],['emaSlow','Slow EMA','n'],['confirm','Wajib candle pengesahan','b'],
+const F=[['Signal','h'],['entrySrc','Pencetus entry','s',[['ema','EMA 5/13 (kaedah #4)'],['re','RE BBMA'],['csa_ext','CSA selepas EXT'],['ema_re','EMA + RE'],['lengkap','BBMA lengkap (EXT→MHV→CSA→RE)']]],['minGrade','Gred setup minimum untuk pencetus BBMA (1–3 ★)','n'],['rr','Risk:Reward (TP akhir)','n'],['slStruct','SL ikut struktur (swing / zon)','b'],['beR','Breakeven: alih SL ke Entry selepas untung X R (0 = tiada)','n'],['slMult','SL multiplier (x ATR, bila SL struktur off)','n'],['structBars','SL struktur: cari swing dalam X candle','n'],['emaFast','Fast EMA','n'],['emaSlow','Slow EMA','n'],['confirm','Wajib candle pengesahan','b'],
  ['Penapis','h'],['requireZone','Wajib: signal di zon Supply/Demand','b'],['requireBBMA','Wajib: signal searah trend BBMA','b'],['requireHTF','Wajib: TF besar searah (EMA 5/13)','b'],['roomFilter','Ruang ke TP: tiada zon lawan sebelum TP','b'],['pullback','Entry pullback (tunggu harga tarik balik)','b'],['sessLN','Sesi London + New York sahaja (15:00–01:00 MYT)','b'],['extFilter','Buang signal bila harga terlalu jauh','b'],['bbwFilter','Buang signal bila Bollinger Band terlalu sempit','b'],['zoneBars','Zon disentuh dalam X bar','n'],
  ['Zon','h'],['maxSupply','Max zon Supply','n'],['maxDemand','Max zon Demand','n'],['minZH','Tinggi zon minimum (x ATR)','n'],['maxZH','Tinggi zon maksimum (x ATR)','n'],
  ['BBMA','h'],['bbLen','Bollinger period','n'],['bbDev','Bollinger deviation','n'],['bbEma','EMA trend','n'],['reCooldown','Jarak minimum RE (bar)','n'],
  ['Sesi','h'],['asiaFilter','Sembunyi signal sesi Asia (08:00–15:00 MYT, TF H1 ke bawah)','b'],
- ['Notifikasi','h'],['alertBB','Notifikasi setup BBMA (EXT/MOM/CSA/RE)','b']];
-function buildSet(){$('settings').innerHTML=F.map(([k,l,t])=>t==='h'||!l?`<div class="k" style="margin:12px 0 2px;font-weight:800;letter-spacing:1px;color:var(--gold)">${k.toUpperCase()}</div>`:
-  `<div class="srow"><span>${l}</span>${t==='b'?`<input type="checkbox" id="s_${k}"${cfg[k]?' checked':''}>`:`<input type="number" step="any" id="s_${k}" value="${cfg[k]}">`}</div>`).join('')+
+ ['Notifikasi','h'],['setupAlert','Notifikasi setup BBMA','s',[['off','Tutup'],['re3','RE ★★★ sahaja'],['lengkap','Setup lengkap sahaja'],['all3','Semua setup ★★★'],['all','Semua setup']]]];
+function buildSet(){$('settings').innerHTML=F.map(([k,l,t,opts])=>t==='h'||!l?`<div class="k" style="margin:12px 0 2px;font-weight:800;letter-spacing:1px;color:var(--gold)">${k.toUpperCase()}</div>`:
+  `<div class="srow"><span>${l}</span>${t==='b'?`<input type="checkbox" id="s_${k}"${cfg[k]?' checked':''}>`:t==='s'?`<select id="s_${k}">${opts.map(([v,n])=>`<option value="${v}"${String(cfg[k])===v?' selected':''}>${n}</option>`).join('')}</select>`:`<input type="number" step="any" id="s_${k}" value="${cfg[k]}">`}</div>`).join('')+
   `<div class="srow"><span>Notifikasi telefon (bila app dibuka)</span><button id="notif">${'Notification'in window&&Notification.permission==='granted'?'Aktif ✓':'Benarkan'}</button></div>`;
   $('settings').insertAdjacentHTML('beforeend',`<div class="k" style="margin:14px 0 2px;font-weight:800;letter-spacing:1px;color:var(--gold)">NOTIFIKASI WALAUPUN APP TERTUTUP</div>
    <div class="help" style="margin-top:2px">1) Tekan butang di bawah. 2) Salin kod. 3) GitHub repo → Settings → Secrets and variables → Actions → New repository secret, nama <b>PUSH_SUB_SZ</b>, paste kod. 4) Actions → "Waddey Signal Zone" → Run workflow (tanda ujian) untuk cuba.</div>
@@ -981,13 +1000,13 @@ function buildSet(){$('settings').innerHTML=F.map(([k,l,t])=>t==='h'||!l?`<div c
    <textarea id="ghVars" class="code" readonly style="height:150px"></textarea><button id="btnGh" style="width:100%;margin-top:6px">📋 Salin senarai variable</button>`);
   const tfsNow=store.get('ghTfs','M15,H1');
   $('ghVars').value=[['SZ_PULLBACK',!!cfg.pullback],['SZ_EXT',!!cfg.extFilter],['SZ_RR',cfg.rr],['SZ_REQUIRE_ZONE',!!cfg.requireZone],['SZ_REQUIRE_HTF',!!cfg.requireHTF],['SZ_REQUIRE_BBMA',!!cfg.requireBBMA],
-    ['SZ_ROOM',!!cfg.roomFilter],['SZ_SESS_LN',!!cfg.sessLN],['SZ_ASIA_FILTER',!!cfg.asiaFilter],['SZ_BBW',!!cfg.bbwFilter],['SZ_SL_STRUCT',!!cfg.slStruct],['SZ_BE_R',+cfg.beR||0],['SZ_TFS',tfsNow]].map(([k,v])=>k+' = '+v).join('\n');
+    ['SZ_ROOM',!!cfg.roomFilter],['SZ_SESS_LN',!!cfg.sessLN],['SZ_ASIA_FILTER',!!cfg.asiaFilter],['SZ_BBW',!!cfg.bbwFilter],['SZ_SL_STRUCT',!!cfg.slStruct],['SZ_BE_R',+cfg.beR||0],['SZ_ENTRY_SRC',cfg.entrySrc||'ema'],['SZ_MIN_GRADE',+cfg.minGrade||1],['SZ_SETUP_ALERT',cfg.setupAlert||'off'],['SZ_TFS',tfsNow]].map(([k,v])=>k+' = '+v).join('\n');
   $('btnGh').onclick=async()=>{try{await navigator.clipboard.writeText($('ghVars').value);$('btnGh').textContent='Disalin ✓';}catch(e){$('ghVars').select();$('btnGh').textContent='Tekan lama & salin';}setTimeout(()=>$('btnGh').textContent='📋 Salin senarai variable',2500);};
   $('btnCopy').onclick=async()=>{const t=$('pushSub');try{await navigator.clipboard.writeText(t.value);$('btnCopy').textContent='Disalin ✓';}catch(e){t.focus();t.select();$('btnCopy').textContent='Tekan lama & salin';}setTimeout(()=>$('btnCopy').textContent='Salin kod',2500);};
   $('notif').onclick=async()=>{try{const p=await Notification.requestPermission();$('notif').textContent=p==='granted'?'Aktif ✓':'Ditolak';}catch(e){$('notif').textContent='Tak disokong';}};}
 F.forEach(f=>{if(f.length===2)f.splice(1,0,'');});
 buildSet();
-$('saveSet').onclick=()=>{F.forEach(([k,,t])=>{if(t==='h')return;const el=$('s_'+k);if(!el)return;cfg[k]=t==='b'?el.checked:+el.value;});store.set('cfg',cfg);refresh(true);banner('Setting disimpan.');};
+$('saveSet').onclick=()=>{F.forEach(([k,,t])=>{if(t==='h')return;const el=$('s_'+k);if(!el)return;cfg[k]=t==='b'?el.checked:t==='s'?el.value:+el.value;});store.set('cfg',cfg);refresh(true);banner('Setting disimpan.');};
 $('resetSet').onclick=()=>{cfg=Object.assign({},DASH_DEF);store.set('cfg',{});buildSet();refresh(true);};
 
 if('serviceWorker'in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}

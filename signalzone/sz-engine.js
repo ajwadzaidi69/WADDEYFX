@@ -9,7 +9,8 @@ const DEF = {
   strong: 1.35, mid: 1.05, showSupply: true, showDemand: true, maxSupply: 3, maxDemand: 3,
   deleteBroken: true, conflict: true, mergeATR: 0.38, conflictATR: 0.22, fadeFar: true, nearATR: 5.0,
   bbLen: 20, bbDev: 2.0, maFast: 5, maSlow: 10, bbEma: 50, reCooldown: 3, requireBBMA: false,
-  showExt: true, showMom: true, showCsa: true, showRe: true,
+  showExt: true, showMom: true, showCsa: true, showRe: true, showMhv: true,
+  entrySrc: 'ema' /*ema | re | csa_ext | ema_re | lengkap*/, minGrade: 1, seqBars: 60, mhvATR: 0.3, nearE50: 3.0, fwdBars: 30,
   slStruct: false, structBars: 10, structBuf: 0.2, minSLATR: 0.5, maxSLATR: 4.0, // SL ikut struktur (swing / zon)
   beR: 0,
   roomFilter: false, pullback: false, pbBars: 3, sessLN: false, extFilter: false, extCandleATR: 2.0, extEmaATR: 3.0, bbwFilter: false,   // breakeven: alih SL ke entry selepas untung X R (0 = tiada)
@@ -93,7 +94,7 @@ function compute(bars, cfgIn, startBars) {
   // arah TF besar pada masa candle k tutup (candle TF besar yang sudah tutup sahaja, tiada repaint)
   const HT = P.htf && P.htf.length ? P.htf : null; let hi0 = 0;
   const htfDir = tClose => { if (!HT) return 0; while (hi0 + 1 < HT.length && HT[hi0 + 1].t <= tClose) hi0++; return HT[hi0].t <= tClose ? HT[hi0].d : 0; };
-  let lastFlags = {}; let pend = null;
+  let lastFlags = {}; let pend = null, seqB = null, seqS = null;
   for (let k = S; k < N; k++) {
     const last = k === N - 1;
     zoneStep(k);
@@ -112,16 +113,7 @@ function compute(bars, cfgIn, startBars) {
     // breakeven: berkuat kuasa mulai candle seterusnya
     if (inPos && P.beR > 0 && !beDone && posRisk > 0 && ((posType > 0 && H[k] >= entry + P.beR * posRisk) || (posType < 0 && L[k] <= entry - P.beR * posRisk))) { sl = entry; beDone = true; }
 
-    const bull = EF[k] > ES[k], bear = EF[k] < ES[k], change = bull !== (EF[k - 1] > ES[k - 1]);
-    let buy = bull && change && (!P.confirm || C[k] > O[k]);
-    let sell = bear && change && (!P.confirm || C[k] < O[k]);
-    const zBuy = k - lastDemTouch <= P.zoneBars, zSell = k - lastSupTouch <= P.zoneBars;
-    if (P.requireZone) { buy = buy && zBuy; sell = sell && zSell; }
-    if (P.requireBBMA) { buy = buy && BTr[k] === 1; sell = sell && BTr[k] === -1; }
-    if (P.requireHTF && HT) { const hd = htfDir(T[k] + P.tfSec); buy = buy && hd === 1; sell = sell && hd === -1; }
-    if (P.asiaFilter && P.tfSec <= 3600) { const hh = new Date((T[k] + P.tfSec) * 1000).getUTCHours(); if (hh >= 0 && hh < 7) { buy = false; sell = false; } }
-
-    // setup BBMA
+    // ---- setup BBMA (dikira dulu supaya boleh jadi pencetus entry)
     const w = UP[k] - LO[k], w1 = UP[k - 1] - LO[k - 1], w2 = UP[k - 2] - LO[k - 2];
     const extB = MLF[k] < LO[k] && !(MLF[k - 1] < LO[k - 1]), extS = MHF[k] > UP[k] && !(MHF[k - 1] > UP[k - 1]);
     const momBr = C[k] > UP[k] && C[k] > O[k] && w > w1, momSr = C[k] < LO[k] && C[k] < O[k] && w > w1;
@@ -131,11 +123,58 @@ function compute(bars, cfgIn, startBars) {
     const reB = BTr[k] === 1 && L[k] <= Math.max(MLF[k], MLS[k]) && C[k] > MLF[k] && C[k] > MLS[k] && !momBr && k - lastReB > P.reCooldown;
     const reS = BTr[k] === -1 && H[k] >= Math.min(MHF[k], MHS[k]) && C[k] < MHF[k] && C[k] < MHS[k] && !momSr && k - lastReS > P.reCooldown;
     if (reB) lastReB = k; if (reS) lastReS = k;
+    // turutan EXT -> MHV -> CSA -> RE
+    if (seqB && k - seqB.k > P.seqBars) seqB = null;
+    if (seqS && k - seqS.k > P.seqBars) seqS = null;
+    let mhvB = false, mhvS = false;
+    if (extB) seqB = { k, ext: L[k], mhv: false, csa: false };
+    else if (seqB && !seqB.mhv) {
+      if (C[k] < LO[k]) seqB.ext = Math.min(seqB.ext, L[k]);   // masih di luar BB: ekstrem berterusan
+      else if (k - seqB.k >= 2 && MLF[k] >= LO[k] && L[k] <= seqB.ext + P.mhvATR * A[k]) { mhvB = true; seqB.mhv = true; }
+    }
+    if (extS) seqS = { k, ext: H[k], mhv: false, csa: false };
+    else if (seqS && !seqS.mhv) {
+      if (C[k] > UP[k]) seqS.ext = Math.max(seqS.ext, H[k]);
+      else if (k - seqS.k >= 2 && MHF[k] <= UP[k] && H[k] >= seqS.ext - P.mhvATR * A[k]) { mhvS = true; seqS.mhv = true; }
+    }
+    const csaExtB = csaB && !!seqB, csaExtS = csaS && !!seqS;
+    const lenB = reB && !!seqB && seqB.mhv && seqB.csa, lenS = reS && !!seqS && seqS.mhv && seqS.csa;
+    if (csaB && seqB) seqB.csa = true; if (csaS && seqS) seqS.csa = true;
+    if (lenB || csaS) seqB = null; if (lenS || csaB) seqS = null;
+    // gred: TF besar searah + zon disentuh + dekat EMA50 (<= nearE50 ATR)
+    const zBuy = k - lastDemTouch <= P.zoneBars, zSell = k - lastSupTouch <= P.zoneBars;
+    const hdK = htfDir(T[k] + P.tfSec), nearE = Math.abs(C[k] - E50[k]) <= P.nearE50 * A[k];
+    const why = d => ({ htf: HT ? hdK === d : false, zone: d > 0 ? zBuy : zSell, near: nearE });
+    const gradeOf = wy => { const n = (wy.htf ? 1 : 0) + (wy.zone ? 1 : 0) + (wy.near ? 1 : 0); return n >= 3 ? 3 : n === 2 ? 2 : 1; };
+    const wyB = why(1), wyS = why(-1), gB = gradeOf(wyB), gS = gradeOf(wyS);
     const lo = [], hi = [];
-    if (P.showExt && extB) lo.push('EXT'); if (P.showMom && momBr && !momB1) lo.push('MOM'); if (P.showCsa && csaB) lo.push('CSA'); if (P.showRe && reB) lo.push('RE');
-    if (P.showExt && extS) hi.push('EXT'); if (P.showMom && momSr && !momS1) hi.push('MOM'); if (P.showCsa && csaS) hi.push('CSA'); if (P.showRe && reS) hi.push('RE');
-    if (lo.length) Mk.push({ k, t: T[k], type: 'bbB', txt: lo.join(' ') });
-    if (hi.length) Mk.push({ k, t: T[k], type: 'bbS', txt: hi.join(' ') });
+    if (lenB) lo.push('LENGKAP');
+    if (P.showExt && extB) lo.push('EXT'); if (P.showMhv && mhvB) lo.push('MHV'); if (P.showMom && momBr && !momB1) lo.push('MOM'); if (P.showCsa && csaB) lo.push('CSA'); if (P.showRe && reB) lo.push('RE');
+    if (lenS) hi.push('LENGKAP');
+    if (P.showExt && extS) hi.push('EXT'); if (P.showMhv && mhvS) hi.push('MHV'); if (P.showMom && momSr && !momS1) hi.push('MOM'); if (P.showCsa && csaS) hi.push('CSA'); if (P.showRe && reS) hi.push('RE');
+    const star = g => '★'.repeat(g);
+    if (lo.length) Mk.push({ k, t: T[k], type: 'bbB', txt: lo.join(' ') + ' ' + star(gB), list: lo, grade: gB, lengkap: lenB, why: wyB, tr: C[k] > E50[k] });
+    if (hi.length) Mk.push({ k, t: T[k], type: 'bbS', txt: hi.join(' ') + ' ' + star(gS), list: hi, grade: gS, lengkap: lenS, why: wyS, tr: C[k] < E50[k] });
+
+    // ---- signal asas (pencetus entry dipilih melalui entrySrc)
+    const bull = EF[k] > ES[k], bear = EF[k] < ES[k], change = bull !== (EF[k - 1] > ES[k - 1]);
+    const emaB = bull && change && (!P.confirm || C[k] > O[k]);
+    const emaS = bear && change && (!P.confirm || C[k] < O[k]);
+    let stB = false, stS = false, useEma = false;
+    switch (P.entrySrc) {
+      case 're': stB = reB; stS = reS; break;
+      case 'csa_ext': stB = csaExtB; stS = csaExtS; break;
+      case 'ema_re': stB = reB; stS = reS; useEma = true; break;
+      case 'lengkap': stB = lenB; stS = lenS; break;
+      default: useEma = true;
+    }
+    if (P.minGrade > 1) { stB = stB && gB >= P.minGrade; stS = stS && gS >= P.minGrade; }
+    let buy = (useEma && emaB) || stB, sell = (useEma && emaS) || stS;
+    if (buy && sell) { buy = false; sell = false; }
+    if (P.requireZone) { buy = buy && zBuy; sell = sell && zSell; }
+    if (P.requireBBMA) { buy = buy && BTr[k] === 1; sell = sell && BTr[k] === -1; }
+    if (P.requireHTF && HT) { buy = buy && hdK === 1; sell = sell && hdK === -1; }
+    if (P.asiaFilter && P.tfSec <= 3600) { const hh = new Date((T[k] + P.tfSec) * 1000).getUTCHours(); if (hh >= 0 && hh < 7) { buy = false; sell = false; } }
 
     // ---- penapis tambahan (dipilih melalui Uji Strategi)
     if (P.sessLN && P.tfSec <= 3600) { const hh = new Date((T[k] + P.tfSec) * 1000).getUTCHours(); if (hh < 7 || hh >= 17) { buy = false; sell = false; } }
@@ -202,8 +241,19 @@ function compute(bars, cfgIn, startBars) {
     if (inv) Mk.push({ k, t: T[k], type: 'inv', txt: invType > 0 ? 'INV BUY' : 'INV SELL' });
     if (opened) Mk.push({ k, t: T[k], type: opened.d > 0 ? 'buy' : 'sell', txt: opened.d > 0 ? 'BUY' : 'SELL', tags: opened.tags.slice(), price: entry, sl, tp });
     if (!showBuy && !showSell && inPos) newHits.forEach(i => Mk.push({ k, t: T[k], type: 'tpn', txt: 'TP' + (i + 1) }));
-    if (last) lastFlags = { buy: showBuy, sell: showSell, tp: tpFinal, sl: slHit && !beAtExit, be: slHit && beAtExit, inv, supT, demT, supB, demB, bb: (lo.length ? 'BBMA BUY ' + lo.join(' ') : '') + (hi.length ? ' BBMA SELL ' + hi.join(' ') : '') };
+    if (last) lastFlags = { buy: showBuy, sell: showSell, tp: tpFinal, sl: slHit && !beAtExit, be: slHit && beAtExit, inv, supT, demT, supB, demB, bb: (lo.length ? 'BBMA BUY ' + lo.join(' ') + ' ' + star(gB) : '') + (hi.length ? ' BBMA SELL ' + hi.join(' ') + ' ' + star(gS) : '') };
   }
+  // keputusan ke depan setiap setup (statistik sahaja): entry tutup candle, SL 1 ATR, TP 1 ATR (1R), dalam fwdBars candle
+  Mk.forEach(m => {
+    if (m.type !== 'bbB' && m.type !== 'bbS') return;
+    const d = m.type === 'bbB' ? 1 : -1, e = C[m.k], a = A[m.k]; let res = null;
+    for (let j = m.k + 1; j < N && j <= m.k + P.fwdBars; j++) {
+      if (d > 0 ? L[j] <= e - a : H[j] >= e + a) { res = -1; break; }   // kena kedua-dua dalam 1 candle = dikira rugi
+      if (d > 0 ? H[j] >= e + a : L[j] <= e - a) { res = 1; break; }
+    }
+    if (res === null && m.k + P.fwdBars < N) res = 0;
+    m.res = res;
+  });
   // ranking & ketelusan zon (seperti ALPHA S+)
   const k = N - 1;
   const rankZ = arr => arr.map((z, i) => {
@@ -220,5 +270,16 @@ function compute(bars, cfgIn, startBars) {
     trend: EF[k] > ES[k] ? 1 : -1, bbma: BTr[k]
   };
 }
-g.WaddeySZ = { compute, DEF };
+function setupMatch(m, mode) {
+  if (!m || !m.list || (m.type !== 'bbB' && m.type !== 'bbS')) return false;
+  switch (mode) {
+    case 're3': return m.list.includes('RE') && m.grade >= 3;
+    case 'lengkap': return !!m.lengkap;
+    case 'all3': return m.grade >= 3;
+    case 'all': return true;
+    default: return false;
+  }
+}
+const SRC_NAME = { ema: 'EMA 5/13', re: 'RE BBMA', csa_ext: 'CSA selepas EXT', ema_re: 'EMA + RE', lengkap: 'BBMA lengkap' };
+g.WaddeySZ = { compute, DEF, setupMatch, SRC_NAME };
 })(typeof window !== 'undefined' ? window : globalThis);
