@@ -27,6 +27,7 @@ const CFG = {
   bbwFilter: env('SZ_BBW', 'false') === 'true',
   entrySrc: env('SZ_ENTRY_SRC', 'ema'),
   minGrade: parseInt(env('SZ_MIN_GRADE', '1'), 10) || 1,
+  newsFilter: env('SZ_NEWS_FILTER', 'true') === 'true',
   rr: parseFloat(env('SZ_RR', '3')) || 3
 };
 const ALERT_TPSL = env('SZ_ALERT_TPSL', 'true') === 'true';
@@ -112,6 +113,8 @@ async function main() {
   const send = client(ws);
   try { const r = await send({ time: 1 }); if (r.time) now = r.time; } catch (e) {}
 
+  // waktu berita USD impak tinggi untuk tapis berita
+  try { CFG.newsT = (JSON.parse(fs.readFileSync(NEWS_FILE, 'utf8')).events || []).filter(n => n.impact === 'High' && String(n.country).toUpperCase() === 'USD').map(n => n.t); } catch (e) { CFG.newsT = []; }
   state.tf = state.tf || {};
   for (const tf of TFLIST) {
     const sec = TFS[tf]; if (!sec) continue;
@@ -142,14 +145,18 @@ async function main() {
     const fresh = R.marks.filter(m => m.t > since && (['buy', 'sell', 'tp', 'sl', 'be', 'inv'].includes(m.type) || SZ.setupMatch(m, SETUP_ALERT)));
     st.lastBar = lastT;
     const ref = bars[bars.length - 1].c;
+    // gabung: setup BBMA yang searah dengan signal BUY/SELL pada candle yang sama masuk ke dalam notifikasi signal
     for (const m of fresh) {
       if (m.type === 'buy' || m.type === 'sell') {
         const d = m.type === 'buy' ? 'BUY' : 'SELL';
         const sup = m.tags.length ? m.tags.join(' · ') : 'EMA sahaja';
         const stars = m.tags.length >= 2 ? '⭐⭐⭐' : m.tags.length === 1 ? '⭐⭐' : '⭐';
-        await sendAll(subs, { title: `${m.type === 'buy' ? '🟢' : '🔴'} ${d} ${sym} ${tf} ${stars}`,
-          body: `Entry ${fmt(m.price, ref)} · SL ${fmt(m.sl, ref)} · TP ${fmt(m.tp, ref)}\nSokongan: ${sup}${OFFSET ? '\n(harga broker)' : ''}`, tag: 'wsz-' + tf });
+        const st = fresh.find(x => x.k === m.k && x.type === (m.type === 'buy' ? 'bbB' : 'bbS'));
+        const stTxt = st ? `\n${st.lengkap ? '⭐ Setup BBMA lengkap' : 'Setup BBMA'}: ${st.list.join(' · ')} ${'⭐'.repeat(st.grade)}` : '';
+        await sendAll(subs, { title: `${m.type === 'buy' ? '🟢' : '🔴'} ${d} ${sym} ${tf} ${stars}${st && st.lengkap ? ' + BBMA lengkap' : ''}`,
+          body: `Entry ${fmt(m.price, ref)} · SL ${fmt(m.sl, ref)} · TP ${fmt(m.tp, ref)}\nSokongan: ${sup}${stTxt}${OFFSET ? '\n(harga broker)' : ''}`, tag: 'wsz-' + tf });
       } else if (m.type === 'bbB' || m.type === 'bbS') {
+        if (fresh.some(x => x.k === m.k && x.type === (m.type === 'bbB' ? 'buy' : 'sell'))) continue;   // sudah digabung dalam notifikasi signal
         const d = m.type === 'bbB' ? 'BUY' : 'SELL', w = m.why || {};
         const why = [w.htf ? 'TF besar searah' : '', w.zone ? (m.type === 'bbB' ? 'di Demand' : 'di Supply') : '', w.near ? 'dekat EMA50' : ''].filter(Boolean).join(' · ') || 'tiada sokongan tambahan';
         await sendAll(subs, { title: `${m.lengkap ? '⭐ Setup BBMA lengkap' : '📐 Setup BBMA'} ${d} ${sym} ${tf} ${'⭐'.repeat(m.grade)}`,
