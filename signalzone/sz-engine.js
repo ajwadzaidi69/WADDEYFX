@@ -11,6 +11,7 @@ const DEF = {
   bbLen: 20, bbDev: 2.0, maFast: 5, maSlow: 10, bbEma: 50, reCooldown: 3, requireBBMA: false,
   showExt: true, showMom: true, showCsa: true, showRe: true,
   slStruct: false, structBars: 10, structBuf: 0.2, minSLATR: 0.5, maxSLATR: 4.0, // SL ikut struktur (swing / zon)
+  beR: 0,   // breakeven: alih SL ke entry selepas untung X R (0 = tiada)
   requireHTF: false, htf: null,   // htf: [{t: masa tutup candle TF besar, d: 1/-1}] untuk penapis TF besar
   asiaFilter: false, tfSec: 300   // asiaFilter: sembunyi signal BUY/SELL 00:00-07:00 UTC (08:00-15:00 MYT) untuk TF H1 ke bawah
 };
@@ -86,7 +87,7 @@ function compute(bars, cfgIn, startBars) {
 
   // ---- gelung utama
   const S = Math.max(3, N - (startBars || 1500));
-  const Mk = []; let inPos = false, posType = 0, entry = 0, sl = 0, tp = 0, posBar = -1, tpLv = [], tpHit = [];
+  const Mk = []; let inPos = false, posType = 0, entry = 0, sl = 0, tp = 0, posBar = -1, tpLv = [], tpHit = [], posRisk = 0, beDone = false;
   let lastDemTouch = -1e9, lastSupTouch = -1e9, lastDemStr = '', lastSupStr = '', lastReB = -1e9, lastReS = -1e9, lastDemBot = 0, lastSupTop = 0;
   // arah TF besar pada masa candle k tutup (candle TF besar yang sudah tutup sahaja, tiada repaint)
   const HT = P.htf && P.htf.length ? P.htf : null; let hi0 = 0;
@@ -102,11 +103,13 @@ function compute(bars, cfgIn, startBars) {
       for (let i = Sup.length - 1; i >= 0; i--) if (C[k] > Sup[i].top) Sup.splice(i, 1);
       for (let i = Dem.length - 1; i >= 0; i--) if (C[k] < Dem[i].bot) Dem.splice(i, 1);
     }
-    let tpFinal = false, slHit = false, inv = false, invType = 0;
+    let tpFinal = false, slHit = false, inv = false, invType = 0; const beAtExit = beDone;
     if (inPos && posType > 0) { if (H[k] >= tp) { tpFinal = true; inPos = false; posType = 0; } else if (L[k] <= sl) { slHit = true; inPos = false; posType = 0; } }
     if (inPos && posType < 0) { if (L[k] <= tp) { tpFinal = true; inPos = false; posType = 0; } else if (H[k] >= sl) { slHit = true; inPos = false; posType = 0; } }
     const newHits = [];
     if (inPos) tpLv.forEach((lv, i) => { if (!tpHit[i] && ((posType > 0 && H[k] >= lv) || (posType < 0 && L[k] <= lv))) { tpHit[i] = true; newHits.push(i); } });
+    // breakeven: berkuat kuasa mulai candle seterusnya
+    if (inPos && P.beR > 0 && !beDone && posRisk > 0 && ((posType > 0 && H[k] >= entry + P.beR * posRisk) || (posType < 0 && L[k] <= entry - P.beR * posRisk))) { sl = entry; beDone = true; }
 
     const bull = EF[k] > ES[k], bear = EF[k] < ES[k], change = bull !== (EF[k - 1] > ES[k - 1]);
     let buy = bull && change && (!P.confirm || C[k] > O[k]);
@@ -149,18 +152,18 @@ function compute(bars, cfgIn, startBars) {
         r0 = Math.max(r0, A[k] * P.minSLATR); r0 = Math.min(r0, A[k] * P.maxSLATR);
         sl = entry - d * r0;
       }
-      const risk = Math.abs(entry - sl); tp = entry + d * risk * P.rr;
+      const risk = Math.abs(entry - sl); tp = entry + d * risk * P.rr; posRisk = risk; beDone = false;
       tpLv = []; tpHit = []; for (let i = 1; i <= Math.floor(P.rr) - 1; i++) { tpLv.push(entry + d * risk * i); tpHit.push(false); }
       inPos = true; posType = d; posBar = k; if (d > 0) showBuy = true; else showSell = true;
     }
     if (tpFinal) Mk.push({ k, t: T[k], type: 'tp', txt: 'TP' });
-    if (slHit) Mk.push({ k, t: T[k], type: 'sl', txt: 'SL' });
+    if (slHit) Mk.push(beAtExit ? { k, t: T[k], type: 'be', txt: 'BE' } : { k, t: T[k], type: 'sl', txt: 'SL' });
     if (inv) Mk.push({ k, t: T[k], type: 'inv', txt: invType > 0 ? 'INV BUY' : 'INV SELL' });
     const tags = [];
     if (showBuy) { if (zBuy) tags.push('Demand ' + lastDemStr); if (BTr[k] === 1) tags.push('BBMA naik'); Mk.push({ k, t: T[k], type: 'buy', txt: 'BUY', tags: tags.slice(), price: entry, sl, tp }); }
     if (showSell) { if (zSell) tags.push('Supply ' + lastSupStr); if (BTr[k] === -1) tags.push('BBMA turun'); Mk.push({ k, t: T[k], type: 'sell', txt: 'SELL', tags: tags.slice(), price: entry, sl, tp }); }
     if (!showBuy && !showSell && inPos) newHits.forEach(i => Mk.push({ k, t: T[k], type: 'tpn', txt: 'TP' + (i + 1) }));
-    if (last) lastFlags = { buy: showBuy, sell: showSell, tp: tpFinal, sl: slHit, inv, supT, demT, supB, demB, bb: (lo.length ? 'BBMA BUY ' + lo.join(' ') : '') + (hi.length ? ' BBMA SELL ' + hi.join(' ') : '') };
+    if (last) lastFlags = { buy: showBuy, sell: showSell, tp: tpFinal, sl: slHit && !beAtExit, be: slHit && beAtExit, inv, supT, demT, supB, demB, bb: (lo.length ? 'BBMA BUY ' + lo.join(' ') : '') + (hi.length ? ' BBMA SELL ' + hi.join(' ') : '') };
   }
   // ranking & ketelusan zon (seperti ALPHA S+)
   const k = N - 1;
@@ -173,7 +176,7 @@ function compute(bars, cfgIn, startBars) {
   return {
     T, O, H, L, C, A, EF, ES, UP, MD, LO, MHF, MHS, MLF, MLS, E50, BTr, S,
     sup: rankZ(Sup), dem: rankZ(Dem), marks: Mk, last: lastFlags,
-    pos: inPos ? { dir: posType, entry, sl, tp, tpLv: tpLv.slice(), bar: posBar, t: T[posBar] } : null,
+    pos: inPos ? { dir: posType, entry, sl, tp, tpLv: tpLv.slice(), bar: posBar, t: T[posBar], risk: posRisk, be: beDone } : null,
     trend: EF[k] > ES[k] ? 1 : -1, bbma: BTr[k]
   };
 }
