@@ -222,7 +222,7 @@ textarea.code{width:100%;height:90px;font:11px ui-monospace,monospace;background
    <div class="dtabs">
     <div class="tabbar" id="tabbar">
       <button data-t="zb" class="on">Zon &amp; BBMA</button><button data-t="mtf">Semua TF</button><button data-t="perf">Prestasi</button>
-      <button data-t="lot">Kalkulator lot</button><button data-t="news">Berita <span id="newsDot"></span></button><button data-t="set">⚙️ Setting</button>
+      <button data-t="lot">Kalkulator lot</button><button data-t="news">Berita <span id="newsDot"></span></button><button data-t="opt">🧪 Uji Strategi</button><button data-t="set">⚙️ Setting</button>
     </div>
     <div class="tpane" data-p="zb">
   <div class="grid2">
@@ -277,6 +277,23 @@ textarea.code{width:100%;height:90px;font:11px ui-monospace,monospace;background
     <div class="help">Merah = impak tinggi (NFP, CPI, FOMC…). Elak buka trade 30 minit sebelum dan 15 minit selepas berita merah. Waktu dalam MYT.</div>
   </div>
 
+    </div>
+    <div class="tpane" data-p="opt" hidden>
+      <div class="card">
+        <div class="ttl"><h2>Uji strategi (backtest pantas)</h2><span class="sp"></span><span id="optInfo" class="k"></span></div>
+        <div class="help" style="margin-top:0">Dashboard kira semula semua signal pada candle yang dimuatkan (sehingga 1500 candle TF semasa) untuk setiap gabungan penapis, kemudian susun ikut keputusan. Tekan <b>Guna</b> untuk pakai setting tu terus.</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap">
+          <button id="optRun" style="background:var(--gold);color:#0b0d12;font-weight:800;border:0;padding:9px 16px">▶ Jalankan ujian</button>
+          <label class="k" style="display:flex;gap:6px;align-items:center">Susun ikut
+            <select id="optSort"><option value="r">Jumlah R</option><option value="wr">Kadar menang</option><option value="pf">Profit factor</option></select></label>
+          <label class="k" style="display:flex;gap:6px;align-items:center">Signal minimum <input id="optMin" type="number" value="10" style="width:64px"></label>
+          <span id="optProg" class="k"></span>
+        </div>
+      </div>
+      <div class="card" style="overflow-x:auto"><table id="optTbl"><thead><tr><th>#</th><th>Gabungan penapis</th><th>SL</th><th>Signal</th><th>Menang</th><th>Jumlah R</th><th>PF</th><th>Rugi berturut</th><th></th></tr></thead><tbody id="optBody"><tr><td colspan="9" class="k">Tekan "Jalankan ujian" untuk mula.</td></tr></tbody></table>
+        <div class="help">PF (profit factor) = jumlah R menang ÷ jumlah R rugi. Di atas 1.3 dikira baik. "Rugi berturut" = rugi berturut-turut paling panjang. Penting kalau guna martingale.<br>
+        ⚠️ Keputusan masa lalu bukan jaminan. Pilih gabungan yang ada <b>banyak signal</b> (sekurang-kurangnya 20) dan keputusan baik di <b>beberapa timeframe</b>, bukan satu sahaja.</div>
+      </div>
     </div>
     <div class="tpane" data-p="set" hidden>
   <!-- SETTING -->
@@ -600,6 +617,46 @@ $('logCsv').onclick=()=>{const rows=logRows();const h='Simbol,TF,Arah,Masa masuk
 $('logClear').onclick=()=>{if(!confirm('Padam semua log signal dalam phone ini?'))return;logDB={};store.set('log',{});renderLog();};
 setBadge();
 
+// ---------- TF BESAR (untuk penapis HTF & uji strategi)
+let htfCache={key:'',at:0,arr:null};
+async function htfDirs(){const h=HTF[tf];if(!h||h===tf)return null;const key=sym+h;
+  if(htfCache.key===key&&Date.now()-htfCache.at<300000)return htfCache.arr;
+  const c=await tfCandles(h,1600);const n=nowS(),sec=TFS[h];const cb=c.filter(b=>b.t+sec<=n+1);
+  const a5=2/(cfg.emaFast+1),a13=2/(cfg.emaSlow+1);let e5=null,e13=null;const arr=[];
+  cb.forEach(b=>{e5=e5==null?b.c:b.c*a5+e5*(1-a5);e13=e13==null?b.c:b.c*a13+e13*(1-a13);arr.push({t:b.t+sec,d:e5>e13?1:e5<e13?-1:0});});
+  htfCache={key,at:Date.now(),arr};return arr;}
+
+// ---------- UJI STRATEGI
+let optRes=[];
+function optStats(r,rr){const o=outcomes(r,rr).filter(x=>x.res!=='run');let win=0,loss=0,gw=0,gl=0,net=0,streak=0,maxS=0;
+  o.forEach(x=>{const v=x.r||0;net+=v;if(x.res==='tp'||v>0){win++;gw+=Math.max(v,0);streak=0;}else{if(x.res==='sl'||v<0){loss++;gl+=Math.abs(Math.min(v,0));streak++;maxS=Math.max(maxS,streak);}}});
+  return{n:o.length,win,loss,wr:o.length?win/o.length*100:0,net,pf:gl>0?gw/gl:(gw>0?99:0),maxS};}
+async function runOpt(){if(!bars.length){$('optProg').textContent='Data belum dimuatkan.';return;}
+  $('optRun').disabled=true;$('optProg').textContent='Menyediakan data TF besar…';
+  let htf=null;try{htf=await htfDirs();}catch(e){}
+  const asiaOK=TFS[tf]<=3600,combos=[];
+  for(const z of[false,true])for(const b of[false,true])for(const h of(htf?[false,true]:[false]))for(const a of(asiaOK?[false,true]:[false]))for(const st of[false,true])combos.push({requireZone:z,requireBBMA:b,requireHTF:h,asiaFilter:a,slStruct:st});
+  optRes=[];let i=0;
+  const step=()=>{const t0=performance.now();
+    while(i<combos.length&&performance.now()-t0<60){const c=combos[i++];
+      const r=WaddeySZ.compute(bars,Object.assign({},cfg,c,{tfSec:TFS[tf],htf}),1500);optRes.push(Object.assign({c},optStats(r,cfg.rr)));}
+    $('optProg').textContent=`Menguji ${i}/${combos.length}…`;
+    if(i<combos.length)setTimeout(step,0);else{$('optRun').disabled=false;$('optProg').textContent='Siap ✓';
+      $('optInfo').textContent=`${symName()} ${tf} · ${Math.min(1500,bars.length)} candle · RR ${cfg.rr}`;renderOpt();}};
+  step();}
+function comboName(c){const p=[];if(c.requireZone)p.push('Zon');if(c.requireBBMA)p.push('BBMA');if(c.requireHTF)p.push('TF besar ('+HTF[tf]+')');if(c.asiaFilter)p.push('Tanpa sesi Asia');return p.length?'EMA + '+p.join(' + '):'EMA sahaja (tiada penapis)';}
+function renderOpt(){if(!optRes.length)return;const mn=+$('optMin').value||0,key=$('optSort').value;
+  const rows=optRes.filter(x=>x.n>=mn).sort((a,b)=>key==='wr'?b.wr-a.wr||b.net-a.net:key==='pf'?b.pf-a.pf||b.net-a.net:b.net-a.net||b.wr-a.wr);
+  const isCur=c=>['requireZone','requireBBMA','requireHTF','asiaFilter','slStruct'].every(k=>!!cfg[k]===!!c[k]);
+  $('optBody').innerHTML=rows.length?rows.map((x,j)=>`<tr${isCur(x.c)?' style="background:rgba(212,175,55,.08)"':''}><td class="k">${j+1}</td><td><b>${comboName(x.c)}</b>${isCur(x.c)?' <span class="pill n">semasa</span>':''}</td>
+    <td>${x.c.slStruct?'Struktur':'ATR'}</td><td>${x.n}</td><td class="${x.wr>=50?'bull':x.wr>=35?'gold':'bear'}"><b>${x.wr.toFixed(0)}%</b> <span class="k">${x.win}/${x.loss}</span></td>
+    <td class="${x.net>=0?'bull':'bear'}"><b>${x.net>=0?'+':''}${x.net.toFixed(1)}R</b></td><td class="${x.pf>=1.3?'bull':x.pf>=1?'gold':'bear'}">${x.pf>=99?'∞':x.pf.toFixed(2)}</td><td>${x.maxS}</td>
+    <td><button class="jbtn" data-oi="${optRes.indexOf(x)}">Guna</button></td></tr>`).join('')
+   :`<tr><td colspan="9" class="k">Tiada gabungan dengan sekurang-kurangnya ${mn} signal. Kurangkan "Signal minimum" atau cuba TF lebih kecil.</td></tr>`;}
+$('optRun').onclick=runOpt;$('optSort').onchange=renderOpt;$('optMin').oninput=renderOpt;
+$('optBody').addEventListener('click',e=>{const b=e.target.closest('[data-oi]');if(!b)return;const c=optRes[+b.dataset.oi].c;
+  Object.assign(cfg,c);store.set('cfg',cfg);buildSet();renderOpt();refresh(true);banner('Setting baru dipakai: '+comboName(c)+' · SL '+(c.slStruct?'struktur':'ATR'));});
+
 // ---------- TAB BAWAH
 function showTab(t){[...$('tabbar').children].forEach(b=>b.classList.toggle('on',b.dataset.t===t));document.querySelectorAll('.tpane').forEach(p=>p.hidden=p.dataset.p!==t);store.set('tab',t);if(t==='lot')renderLot();if(t==='news')renderNews();}
 $('tabbar').onclick=e=>{const b=e.target.closest('button');if(b)showTab(b.dataset.t);};
@@ -703,7 +760,8 @@ async function refresh(force){if(busy)return;busy=true;
     try{const t=await send({time:1});if(t.time)srvOff=t.time-Date.now()/1000;}catch(e){}
     all=await tfCandles(tf,1600);const n=nowS();bars=all.filter(b=>b.t+TFS[tf]<=n+1);
     if(bars.length<80)throw new Error('data tak cukup');
-    R=WaddeySZ.compute(bars,Object.assign({},cfg,{tfSec:TFS[tf]}),1500);
+    const htf=cfg.requireHTF?await htfDirs():null;
+    R=WaddeySZ.compute(bars,Object.assign({},cfg,{tfSec:TFS[tf],htf}),1500);
     cs.setData(all.map(b=>({time:b.t,open:b.o,high:b.h,low:b.l,close:b.c})));
     const z=all[all.length-1];cur={time:z.t,open:z.o,high:z.h,low:z.l,close:z.c};
     setLines();setMarkers();render();drawOv();notify();
@@ -732,8 +790,8 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();
 $('sym').onchange=async()=>{sym=$('sym').value;store.set('sym',sym);if(tickSub){try{await send({forget:tickSub})}catch(e){}tickSub=null;}cur=null;live=null;dayOpen=null;mtfData={};mtfAt=0;refresh(true);};
 
 // ---------- setting
-const F=[['Signal','h'],['rr','Risk:Reward (TP akhir)','n'],['slMult','SL multiplier (x ATR)','n'],['emaFast','Fast EMA','n'],['emaSlow','Slow EMA','n'],['confirm','Wajib candle pengesahan','b'],
- ['Penapis','h'],['requireZone','Wajib: signal di zon Supply/Demand','b'],['requireBBMA','Wajib: signal searah trend BBMA','b'],['zoneBars','Zon disentuh dalam X bar','n'],
+const F=[['Signal','h'],['rr','Risk:Reward (TP akhir)','n'],['slStruct','SL ikut struktur (swing / zon)','b'],['slMult','SL multiplier (x ATR, bila SL struktur off)','n'],['structBars','SL struktur: cari swing dalam X candle','n'],['emaFast','Fast EMA','n'],['emaSlow','Slow EMA','n'],['confirm','Wajib candle pengesahan','b'],
+ ['Penapis','h'],['requireZone','Wajib: signal di zon Supply/Demand','b'],['requireBBMA','Wajib: signal searah trend BBMA','b'],['requireHTF','Wajib: TF besar searah (EMA 5/13)','b'],['zoneBars','Zon disentuh dalam X bar','n'],
  ['Zon','h'],['maxSupply','Max zon Supply','n'],['maxDemand','Max zon Demand','n'],['minZH','Tinggi zon minimum (x ATR)','n'],['maxZH','Tinggi zon maksimum (x ATR)','n'],
  ['BBMA','h'],['bbLen','Bollinger period','n'],['bbDev','Bollinger deviation','n'],['bbEma','EMA trend','n'],['reCooldown','Jarak minimum RE (bar)','n'],
  ['Sesi','h'],['asiaFilter','Sembunyi signal sesi Asia (08:00–15:00 MYT, TF H1 ke bawah)','b'],

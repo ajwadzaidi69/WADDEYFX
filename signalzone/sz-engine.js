@@ -10,6 +10,8 @@ const DEF = {
   deleteBroken: true, conflict: true, mergeATR: 0.38, conflictATR: 0.22, fadeFar: true, nearATR: 5.0,
   bbLen: 20, bbDev: 2.0, maFast: 5, maSlow: 10, bbEma: 50, reCooldown: 3, requireBBMA: false,
   showExt: true, showMom: true, showCsa: true, showRe: true,
+  slStruct: false, structBars: 10, structBuf: 0.2, minSLATR: 0.5, maxSLATR: 4.0, // SL ikut struktur (swing / zon)
+  requireHTF: false, htf: null,   // htf: [{t: masa tutup candle TF besar, d: 1/-1}] untuk penapis TF besar
   asiaFilter: false, tfSec: 300   // asiaFilter: sembunyi signal BUY/SELL 00:00-07:00 UTC (08:00-15:00 MYT) untuk TF H1 ke bawah
 };
 
@@ -85,14 +87,17 @@ function compute(bars, cfgIn, startBars) {
   // ---- gelung utama
   const S = Math.max(3, N - (startBars || 1500));
   const Mk = []; let inPos = false, posType = 0, entry = 0, sl = 0, tp = 0, posBar = -1, tpLv = [], tpHit = [];
-  let lastDemTouch = -1e9, lastSupTouch = -1e9, lastDemStr = '', lastSupStr = '', lastReB = -1e9, lastReS = -1e9;
+  let lastDemTouch = -1e9, lastSupTouch = -1e9, lastDemStr = '', lastSupStr = '', lastReB = -1e9, lastReS = -1e9, lastDemBot = 0, lastSupTop = 0;
+  // arah TF besar pada masa candle k tutup (candle TF besar yang sudah tutup sahaja, tiada repaint)
+  const HT = P.htf && P.htf.length ? P.htf : null; let hi0 = 0;
+  const htfDir = tClose => { if (!HT) return 0; while (hi0 + 1 < HT.length && HT[hi0 + 1].t <= tClose) hi0++; return HT[hi0].t <= tClose ? HT[hi0].d : 0; };
   let lastFlags = {};
   for (let k = S; k < N; k++) {
     const last = k === N - 1;
     zoneStep(k);
     let supT = false, supB = false, demT = false, demB = false;
-    Sup.forEach(z => { if (H[k] >= z.bot && L[k] <= z.top) { supT = true; lastSupTouch = k; lastSupStr = strength(z.score); } if (C[k] > z.top) supB = true; });
-    Dem.forEach(z => { if (H[k] >= z.bot && L[k] <= z.top) { demT = true; lastDemTouch = k; lastDemStr = strength(z.score); } if (C[k] < z.bot) demB = true; });
+    Sup.forEach(z => { if (H[k] >= z.bot && L[k] <= z.top) { supT = true; lastSupTouch = k; lastSupStr = strength(z.score); lastSupTop = z.top; } if (C[k] > z.top) supB = true; });
+    Dem.forEach(z => { if (H[k] >= z.bot && L[k] <= z.top) { demT = true; lastDemTouch = k; lastDemStr = strength(z.score); lastDemBot = z.bot; } if (C[k] < z.bot) demB = true; });
     if (P.deleteBroken) {
       for (let i = Sup.length - 1; i >= 0; i--) if (C[k] > Sup[i].top) Sup.splice(i, 1);
       for (let i = Dem.length - 1; i >= 0; i--) if (C[k] < Dem[i].bot) Dem.splice(i, 1);
@@ -109,6 +114,7 @@ function compute(bars, cfgIn, startBars) {
     const zBuy = k - lastDemTouch <= P.zoneBars, zSell = k - lastSupTouch <= P.zoneBars;
     if (P.requireZone) { buy = buy && zBuy; sell = sell && zSell; }
     if (P.requireBBMA) { buy = buy && BTr[k] === 1; sell = sell && BTr[k] === -1; }
+    if (P.requireHTF && HT) { const hd = htfDir(T[k] + P.tfSec); buy = buy && hd === 1; sell = sell && hd === -1; }
     if (P.asiaFilter && P.tfSec <= 3600) { const hh = new Date((T[k] + P.tfSec) * 1000).getUTCHours(); if (hh >= 0 && hh < 7) { buy = false; sell = false; } }
 
     // setup BBMA
@@ -133,6 +139,16 @@ function compute(bars, cfgIn, startBars) {
       if (inPos && posType === d) continue;
       if (inPos && posType === -d) { inv = true; invType = -d; inPos = false; }
       entry = C[k]; sl = d > 0 ? L[k] - A[k] * P.slMult : H[k] + A[k] * P.slMult;
+      if (P.slStruct) {
+        // SL di luar struktur: bawah zon Demand yang disentuh / swing low terdekat (SELL: atas zon Supply / swing high)
+        let lv = d > 0 ? Infinity : -Infinity;
+        for (let j = Math.max(0, k - P.structBars + 1); j <= k; j++) lv = d > 0 ? Math.min(lv, L[j]) : Math.max(lv, H[j]);
+        if (d > 0 && zBuy && lastDemBot > 0) lv = Math.min(lv, lastDemBot);
+        if (d < 0 && zSell && lastSupTop > 0) lv = Math.max(lv, lastSupTop);
+        let r0 = Math.abs(entry - (lv - d * A[k] * P.structBuf));
+        r0 = Math.max(r0, A[k] * P.minSLATR); r0 = Math.min(r0, A[k] * P.maxSLATR);
+        sl = entry - d * r0;
+      }
       const risk = Math.abs(entry - sl); tp = entry + d * risk * P.rr;
       tpLv = []; tpHit = []; for (let i = 1; i <= Math.floor(P.rr) - 1; i++) { tpLv.push(entry + d * risk * i); tpHit.push(false); }
       inPos = true; posType = d; posBar = k; if (d > 0) showBuy = true; else showSell = true;
