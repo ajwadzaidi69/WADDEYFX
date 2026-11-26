@@ -25,10 +25,13 @@ const CFG = {
   sessLN: env('SZ_SESS_LN', 'false') === 'true',
   extFilter: env('SZ_EXT', 'false') === 'true',
   bbwFilter: env('SZ_BBW', 'false') === 'true',
+  entrySrc: env('SZ_ENTRY_SRC', 'ema'),
+  minGrade: parseInt(env('SZ_MIN_GRADE', '1'), 10) || 1,
   rr: parseFloat(env('SZ_RR', '3')) || 3
 };
 const ALERT_TPSL = env('SZ_ALERT_TPSL', 'true') === 'true';
 const ALERT_NEWS = env('SZ_ALERT_NEWS', 'true') === 'true';
+const SETUP_ALERT = env('SZ_SETUP_ALERT', 'off');   // off | re3 | lengkap | all3 | all
 const TFS = { M5: 300, M15: 900, H1: 3600, H4: 14400, D1: 86400 };
 const HTF = { M5: 'H1', M15: 'H1', H1: 'H4', H4: 'D1', D1: 'D1' };
 const LABEL = { frxXAUUSD: 'XAUUSD', frxXAGUSD: 'XAGUSD', frxEURUSD: 'EURUSD', frxGBPUSD: 'GBPUSD', frxUSDJPY: 'USDJPY' };
@@ -121,7 +124,7 @@ async function main() {
     const lastT = bars[bars.length - 1].t;
     if (now - (lastT + sec) > Math.max(3600, sec * 2)) { console.log(tf, 'pasaran tutup'); continue; }
     let htf = null;
-    if (CFG.requireHTF && HTF[tf] !== tf) {
+    if (HTF[tf] !== tf) {   // sentiasa ambil TF besar: perlu untuk gred setup BBMA
       try {
         const hs = TFS[HTF[tf]];
         const hr = await send({ ticks_history: SYMBOL, end: 'latest', style: 'candles', granularity: hs, count: 1600, adjust_start_time: 1 });
@@ -136,7 +139,7 @@ async function main() {
     const st = state.tf[tf] = state.tf[tf] || {};
     // hanya peristiwa baru sejak semakan lepas (maksimum 2 candle ke belakang)
     const since = Math.max(st.lastBar || 0, lastT - sec * 2);
-    const fresh = R.marks.filter(m => m.t > since && ['buy', 'sell', 'tp', 'sl', 'be', 'inv'].includes(m.type));
+    const fresh = R.marks.filter(m => m.t > since && (['buy', 'sell', 'tp', 'sl', 'be', 'inv'].includes(m.type) || SZ.setupMatch(m, SETUP_ALERT)));
     st.lastBar = lastT;
     const ref = bars[bars.length - 1].c;
     for (const m of fresh) {
@@ -146,6 +149,11 @@ async function main() {
         const stars = m.tags.length >= 2 ? '⭐⭐⭐' : m.tags.length === 1 ? '⭐⭐' : '⭐';
         await sendAll(subs, { title: `${m.type === 'buy' ? '🟢' : '🔴'} ${d} ${sym} ${tf} ${stars}`,
           body: `Entry ${fmt(m.price, ref)} · SL ${fmt(m.sl, ref)} · TP ${fmt(m.tp, ref)}\nSokongan: ${sup}${OFFSET ? '\n(harga broker)' : ''}`, tag: 'wsz-' + tf });
+      } else if (m.type === 'bbB' || m.type === 'bbS') {
+        const d = m.type === 'bbB' ? 'BUY' : 'SELL', w = m.why || {};
+        const why = [w.htf ? 'TF besar searah' : '', w.zone ? (m.type === 'bbB' ? 'di Demand' : 'di Supply') : '', w.near ? 'dekat EMA50' : ''].filter(Boolean).join(' · ') || 'tiada sokongan tambahan';
+        await sendAll(subs, { title: `${m.lengkap ? '⭐ Setup BBMA lengkap' : '📐 Setup BBMA'} ${d} ${sym} ${tf} ${'⭐'.repeat(m.grade)}`,
+          body: `${m.list.join(' · ')} @ ${fmt(bars[m.k].c, ref)}\nSokongan: ${why}\nIni amaran setup, bukan signal entry. Semak chart dulu.`, tag: 'wsz-bb-' + tf });
       } else if (ALERT_TPSL) {
         const t = m.type === 'tp' ? `✅ TP kena · ${sym} ${tf}` : m.type === 'sl' ? `❌ SL kena · ${sym} ${tf}` : m.type === 'be' ? `⚪ Breakeven · ${sym} ${tf}` : `⚠️ ${m.txt} · ${sym} ${tf}`;
         const b = m.type === 'tp' ? `Sasaran ${CFG.rr}R tercapai. Trade selesai dengan untung.` : m.type === 'sl' ? 'Stop loss kena. Trade selesai -1R. Tunggu setup seterusnya.' : m.type === 'be' ? 'Harga kembali ke Entry selepas SL dialih. Trade selesai 0R (tiada rugi).' : 'Signal lama dibatalkan kerana signal arah lawan keluar.';
