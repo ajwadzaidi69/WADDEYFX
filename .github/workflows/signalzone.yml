@@ -51,6 +51,9 @@ jobs:
           SZ_SESS_LN: ${{ vars.SZ_SESS_LN }}
           SZ_EXT: ${{ vars.SZ_EXT }}
           SZ_BBW: ${{ vars.SZ_BBW }}
+          SZ_ENTRY_SRC: ${{ vars.SZ_ENTRY_SRC }}
+          SZ_MIN_GRADE: ${{ vars.SZ_MIN_GRADE }}
+          SZ_SETUP_ALERT: ${{ vars.SZ_SETUP_ALERT }}
           BROKER_OFFSET: ${{ vars.BROKER_OFFSET }}
           TEST: ${{ inputs.test }}
         run: node sz-run.js
