@@ -54,6 +54,7 @@ jobs:
           SZ_ENTRY_SRC: ${{ vars.SZ_ENTRY_SRC }}
           SZ_MIN_GRADE: ${{ vars.SZ_MIN_GRADE }}
           SZ_SETUP_ALERT: ${{ vars.SZ_SETUP_ALERT }}
+          SZ_NEWS_FILTER: ${{ vars.SZ_NEWS_FILTER }}
           BROKER_OFFSET: ${{ vars.BROKER_OFFSET }}
           TEST: ${{ inputs.test }}
         run: node sz-run.js
