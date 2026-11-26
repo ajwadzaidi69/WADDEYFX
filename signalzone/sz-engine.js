@@ -216,6 +216,7 @@ function compute(bars, cfgIn, startBars) {
     T, O, H, L, C, A, EF, ES, UP, MD, LO, MHF, MHS, MLF, MLS, E50, BTr, S,
     sup: rankZ(Sup), dem: rankZ(Dem), marks: Mk, last: lastFlags,
     pos: inPos ? { dir: posType, entry, sl, tp, tpLv: tpLv.slice(), bar: posBar, t: T[posBar], risk: posRisk, be: beDone } : null,
+    pend: (pend && P.pbBars - (N - 1 - pend.k0) > 0) ? { dir: pend.d, level: pend.level, sl: pend.sl0, t: T[pend.k0], left: P.pbBars - (N - 1 - pend.k0), tags: pend.tags } : null,
     trend: EF[k] > ES[k] ? 1 : -1, bbma: BTr[k]
   };
 }

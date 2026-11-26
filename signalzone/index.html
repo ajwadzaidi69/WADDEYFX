@@ -150,6 +150,10 @@ textarea.code{width:100%;height:90px;font:11px ui-monospace,monospace;background
   nav.bnav{justify-content:center}nav.bnav button{flex:none;width:170px}
 }
 @media (max-width:1099px){#chartWrap{height:400px;flex:none}}
+.method{display:flex;flex-wrap:wrap;gap:5px;margin:-2px 0 10px}.method span{font-size:11px;font-weight:700;border-radius:999px;padding:3px 9px;background:rgba(212,175,55,.1);color:var(--gold);border:1px solid rgba(212,175,55,.3)}
+.method span.lab{background:none;border:0;color:var(--mut);padding:3px 2px}
+.pendbox{border:1px dashed rgba(212,175,55,.6);background:rgba(212,175,55,.06);border-radius:12px;padding:12px;margin-bottom:8px}
+.eq{width:100%;height:120px;display:block;margin:6px 0 10px}
 @media (max-width:560px){.pricebar{grid-template-columns:1fr 1fr}.pricebar .tf3{display:none}.checks{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.tgrid{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
@@ -183,6 +187,7 @@ textarea.code{width:100%;height:90px;font:11px ui-monospace,monospace;background
   <!-- KEPUTUSAN -->
   <div class="card verdict" id="verdictCard">
     <div class="ttl"><h2>Keputusan sekarang</h2><span class="sp"></span><span id="vTime" class="k"></span></div>
+    <div id="vMethod" class="method"></div>
     <div class="vhead">
       <div><div id="vBig" class="vbig">—</div><div id="vMeter" class="meter"><i></i><i></i><i></i><i></i><i></i></div></div>
       <span class="sp"></span>
@@ -245,6 +250,7 @@ textarea.code{width:100%;height:90px;font:11px ui-monospace,monospace;background
   <!-- PRESTASI -->
   <div class="card"><div class="ttl"><h2>Prestasi signal</h2><span class="sp"></span><span id="perfRange" class="k"></span></div>
     <div class="stats" id="stats"></div>
+    <div class="k">Graf jumlah R (signal TF semasa)</div><svg id="eqPerf" class="eq"></svg>
     <table><thead><tr><th>Masa</th><th>Signal</th><th>Entry</th><th>Hasil</th></tr></thead><tbody id="hist"></tbody></table>
     <div class="help">Dikira semula dari candle yang dimuatkan (bukan jaminan prestasi akan datang). TP = +R ikut setting, SL = -1R, INV = ditutup pada harga signal lawan.</div></div>
 
@@ -312,7 +318,7 @@ textarea.code{width:100%;height:90px;font:11px ui-monospace,monospace;background
   <!-- ================= MOD RINGKAS ================= -->
   <section id="viewSimple" class="view" hidden>
     <div class="card sbig"><div class="k" id="sSym">—</div><div class="p gold" id="sPrice">—</div><div class="k">Candle tutup dalam <b id="sTimer">—</b></div></div>
-    <div class="card sbig" id="sVerdictCard"><div class="k">KEPUTUSAN</div><div class="vv" id="sVerdict">—</div><div id="sScore" class="k"></div><div id="sAct" class="action" style="text-align:left"></div></div>
+    <div class="card sbig" id="sVerdictCard"><div class="k">KEPUTUSAN</div><div class="vv" id="sVerdict">—</div><div id="sScore" class="k"></div><div id="sMethod" class="method" style="justify-content:center"></div><div id="sAct" class="action" style="text-align:left"></div></div>
     <div class="card" id="sTrade"></div>
     <div id="sNews"></div>
   </section>
@@ -330,6 +336,7 @@ textarea.code{width:100%;height:90px;font:11px ui-monospace,monospace;background
         <div class="chips" id="fSym"><button data-v="cur" class="on">Simbol semasa</button><button data-v="all">Semua simbol</button></div>
       </div>
       <div class="stats" id="logStats"></div>
+      <div class="k">Graf jumlah R (ikut tapisan)</div><svg id="eqLog" class="eq"></svg>
     </div>
     <div class="card"><div class="ttl"><h2>Prestasi ikut jenis signal</h2></div>
       <table><thead><tr><th>Jenis</th><th>TP</th><th>SL</th><th>Menang</th><th>Jumlah R</th></tr></thead><tbody id="typeStats"></tbody></table>
@@ -367,7 +374,11 @@ const WOFF=345600; // minggu bermula Isnin 00:00 UTC
 const bucket=(t,sec)=>sec===604800?Math.floor((t-WOFF)/sec)*sec+WOFF:Math.floor(t/sec)*sec;
 const $=id=>document.getElementById(id);
 const store={get(k,d){try{const v=localStorage.getItem('wsz_'+k);return v==null?d:JSON.parse(v);}catch(e){return d;}},set(k,v){try{localStorage.setItem('wsz_'+k,JSON.stringify(v));}catch(e){}}};
-let sym=store.get('sym','frxXAUUSD'),tf=store.get('tf','M5'),cfg=Object.assign({},WaddeySZ.DEF,store.get('cfg',{})),show=Object.assign({ema:true,bb:true,ma:false,e50:true,zone:true,setup:true},store.get('show',{}));
+// Kaedah pilihan (#4 dari Uji Strategi): EMA + Pullback + Tak terlalu jauh, TP 1.5R
+const METHOD={requireZone:false,requireBBMA:false,requireHTF:false,asiaFilter:false,sessLN:false,roomFilter:false,bbwFilter:false,slStruct:false,beR:0,pullback:true,extFilter:true,rr:1.5};
+const DASH_DEF=Object.assign({},WaddeySZ.DEF,METHOD);
+if(store.get('cfgVer',0)<2){const old=store.get('cfg',{});store.set('cfg',Object.assign({},old,METHOD));store.set('cfgVer',2);}
+let sym=store.get('sym','frxXAUUSD'),tf=store.get('tf','M5'),cfg=Object.assign({},DASH_DEF,store.get('cfg',{})),show=Object.assign({ema:true,bb:true,ma:false,e50:true,zone:true,setup:true},store.get('show',{}));
 let ws=null,ep=0,rid=1,pend=new Map(),tickSub=null,srvOff=0,R=null,bars=[],all=[],busy=false,cur=null,live=null,dayOpen=null;
 let lastAlertKey=store.get('lastAlert',''),mtfData={},mtfAt=0;
 $('sym').value=sym;
@@ -447,6 +458,7 @@ function setMarkers(){const m=[];const from=R.T[Math.max(R.S,R.T.length-400)];
     else if(show.setup&&x.type==='bbS')m.push({time:x.t,position:'aboveBar',color:'#f472b6',shape:'circle',text:x.txt});});
   m.sort((a,b)=>a.time-b.time);cs.setMarkers(m);
   plines.forEach(p=>cs.removePriceLine(p));plines=[];
+  if(R.pend&&!R.pos){const q=R.pend;plines.push(cs.createPriceLine({price:q.level,color:'#d4af37',lineWidth:2,lineStyle:1,axisLabelVisible:true,title:(q.dir>0?'Pullback BUY':'Pullback SELL')}));}
   if(R.pos){const p=R.pos;const L2=[['Entry',p.entry,'#d4af37',2],['SL',p.sl,'#ef4444',0],['TP',p.tp,'#22c55e',0]];p.tpLv.forEach((v,i)=>L2.push(['TP'+(i+1),v,'#86efac',2]));
     L2.forEach(([t,v,c,s])=>plines.push(cs.createPriceLine({price:v,color:c,lineWidth:1,lineStyle:s,axisLabelVisible:true,title:t})));}}
 $('tog').onclick=e=>{const b=e.target.closest('button');if(!b)return;const k=b.dataset.k;show[k]=!show[k];b.classList.toggle('on',show[k]);store.set('show',show);if(R){setLines();setMarkers();drawOv();}};
@@ -519,9 +531,16 @@ function render(){const k=R.C.length-1,an=analyse();
   const sets=R.marks.filter(x=>x.type==='bbB'||x.type==='bbS').slice(-6).reverse();
   const meaning={EXT:'harga terlampau jauh',MOM:'momentum kuat',CSA:'arah baru',RE:'masuk semula ikut trend'};
   $('bbSetups').innerHTML=sets.length?sets.map(x=>`<div class="setup"><span><b class="${x.type==='bbB'?'bull':'bear'}">${x.type==='bbB'?'BUY':'SELL'} ${x.txt}</b> <span class="k">${x.txt.split(' ').map(t=>meaning[t]).join(', ')}</span></span><span class="k">${ago(x.t)}</span></div>`).join(''):'<div class="k">Tiada setup dalam data semasa.</div>';
-  renderPerf();renderMTF();renderLot();renderNews();if(!$('viewSimple').hidden)renderSimple();}
+  renderPerf();renderMTF();renderLot();renderNews();renderMethod();if(!$('viewSimple').hidden)renderSimple();}
 
+function pendHtml(){const q=R&&R.pend;if(!q)return'';const d=q.dir,c=live??R.C[R.C.length-1],dist=Math.abs(c-q.level);
+  const sec=TFS[tf],ends=q.t+sec*(cfg.pbBars+1);
+  return `<div class="pendbox"><div style="display:flex;align-items:center;gap:8px"><b class="${d>0?'bull':'bear'}" style="font-size:17px">⏳ ${d>0?'BUY':'SELL'} menunggu pullback</b><span class="sp"></span><span class="pill n">${q.left} candle lagi</span></div>
+   <div class="tgrid"><div class="tbox"><div class="k">Masuk bila harga ${d>0?'turun':'naik'} ke</div><div class="v gold">${fx(q.level)}</div></div>
+   <div class="tbox"><div class="k">Jarak dari harga sekarang</div><div class="v">${fxd(dist)}</div></div><div class="tbox"><div class="k">Batal jika sentuh</div><div class="v bear">${fx(q.sl)}</div></div></div>
+   <div class="help">Signal ${d>0?'BUY':'SELL'} keluar ${ago(q.t)}. Kaedah pullback: tunggu harga tarik balik ke paras ni sebelum masuk (harga lebih baik, SL lebih dekat). Kalau harga tak sampai dalam ${q.left} candle, signal batal. Tamat lebih kurang ${fH(ends)}.</div></div>`;}
 function renderTrade(){const p=R&&R.pos;const st=$('tStatus');
+  if(!p&&R&&R.pend){st.className='pill '+(R.pend.dir>0?'b':'s');st.textContent='⏳ Menunggu pullback';$('tBody').innerHTML=pendHtml();return;}
   if(!p){st.className='pill n';st.textContent='Tiada posisi';
     const lastSig=[...R.marks].reverse().find(x=>x.type==='buy'||x.type==='sell');
     const lastEnd=[...R.marks].reverse().find(x=>['tp','sl','be','inv'].includes(x.type));
@@ -550,7 +569,7 @@ function outcomes(r,rr){r=r||R;rr=rr||cfg.rr;const out=[];let open=null;
       else if(x.type==='be'){open.res='be';open.r=0;open.exitT=x.t;open.exit=open.entry;}
       else if(x.type==='inv'){open.res='inv';open.exitT=x.t;open.exit=r.C[x.k];open.r=(r.C[x.k]-open.entry)*open.d/risk;}}});
   out.forEach(o=>{if(!o.res)o.res='run';});return out;}
-function renderPerf(){const o=outcomes(),done=o.filter(x=>x.res!=='run'),win=done.filter(x=>x.res==='tp').length,loss=done.filter(x=>x.res==='sl').length,inv=done.filter(x=>x.res==='inv').length;
+function renderPerf(){try{drawEq('eqPerf',outcomes().filter(x=>x.res!=='run').map(x=>x.r||0));}catch(e){}const o=outcomes(),done=o.filter(x=>x.res!=='run'),win=done.filter(x=>x.res==='tp').length,loss=done.filter(x=>x.res==='sl').length,inv=done.filter(x=>x.res==='inv').length;
   const net=done.reduce((s,x)=>s+(x.r||0),0),wr=done.length?win/done.length*100:0;
   const conf=done.filter(x=>x.tags.length>=2),cw=conf.filter(x=>x.res==='tp').length;
   $('perfRange').textContent=R.T.length?'sejak '+fT(R.T[R.S]):'';
@@ -584,6 +603,7 @@ function renderLog(){const rows=logRows();
   const tp=base.filter(x=>x.res==='tp').length,sl=base.filter(x=>x.res==='sl').length,inv=base.filter(x=>x.res==='inv').length,run=base.filter(x=>x.res==='run').length;
   const net=base.filter(x=>x.res!=='run').reduce((a,x)=>a+(x.r||0),0),wr=tp+sl?tp/(tp+sl)*100:0;
   $('logCount').textContent=rows.length+' rekod';
+  try{drawEq('eqLog',base.filter(x=>x.res!=='run').sort((a,b)=>(a.exitT||a.t)-(b.exitT||b.t)).map(x=>x.r||0));}catch(e){}
   $('typeStats').innerHTML=[0,1,2,3].map(t=>{const g=base.filter(x=>sigType(x)===t&&x.res!=='run'),w=g.filter(x=>x.res==='tp').length,l=g.filter(x=>x.res==='sl').length,nr=g.reduce((a,x)=>a+(x.r||0),0);
     return `<tr><td><b>${TYPEN[t]}</b></td><td class="bull">${w}</td><td class="bear">${l}</td><td>${w+l?Math.round(w/(w+l)*100)+'%':'—'}</td><td class="${nr>=0?'bull':'bear'}">${g.length?(nr>=0?'+':'')+nr.toFixed(1)+'R':'—'}</td></tr>`;}).join('');
   const jr=base.filter(x=>x.j);$('jurCard').hidden=fl.res!=='jur';
@@ -708,6 +728,23 @@ $('optRun').onclick=runOpt;$('optAll').onclick=runOptAll;$('optSort').onchange=r
 $('optBody').addEventListener('click',e=>{const b=e.target.closest('[data-oi]');if(!b)return;const c=optRes[+b.dataset.oi].c;
   Object.assign(cfg,c);store.set('cfg',cfg);buildSet();renderOpt();refresh(true);
   banner('Setting baru dipakai: '+comboName(c)+' · TP '+c.rr+'R');});
+
+// ---------- KAEDAH AKTIF
+function methodParts(c){const p=[];p.push('EMA 5/13');if(c.pullback)p.push('Pullback');if(c.extFilter)p.push('Tak terlalu jauh');if(c.requireZone)p.push('Zon');if(c.requireHTF)p.push('TF besar');if(c.requireBBMA)p.push('BBMA');
+  if(c.roomFilter)p.push('Ruang ke TP');if(c.sessLN)p.push('London+NY');if(c.asiaFilter)p.push('Tanpa Asia');if(c.bbwFilter)p.push('BB tak sempit');p.push('TP '+c.rr+'R');p.push(c.slStruct?'SL struktur':'SL ATR');if(+c.beR)p.push('BE '+c.beR+'R');return p;}
+function renderMethod(){const isM=Object.keys(METHOD).every(k=>(+cfg[k]||0)===(+METHOD[k]||0));
+  const h='<span class="lab">Kaedah:</span>'+methodParts(cfg).map(x=>`<span>${x}</span>`).join('')+(isM?'<span style="color:var(--bull);border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.1)">✓ Kaedah #4</span>':'');
+  $('vMethod').innerHTML=h;$('sMethod').innerHTML=h;}
+
+// ---------- GRAF EKUITI (jumlah R terkumpul)
+function drawEq(id,list){const el=$(id);if(!el)return;const W=el.clientWidth||600,H=120;let cum=0;const pts=[0];list.forEach(x=>{cum+=x;pts.push(cum);});
+  if(pts.length<2){el.innerHTML=`<text x="8" y="60" fill="#8a91a3" font-size="12">Belum cukup data</text>`;return;}
+  const mn=Math.min(0,...pts),mx=Math.max(0,...pts),sp=(mx-mn)||1,X=i=>8+(W-16)*i/(pts.length-1),Y=v=>8+(H-16)*(mx-v)/sp;
+  const d=pts.map((v,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)).join(' '),last=pts[pts.length-1],col=last>=0?'#22c55e':'#ef4444';
+  let peak=-1e9,dd=0;pts.forEach(v=>{peak=Math.max(peak,v);dd=Math.max(dd,peak-v);});
+  el.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  el.innerHTML=`<line x1="8" x2="${W-8}" y1="${Y(0)}" y2="${Y(0)}" stroke="#2a3040" stroke-dasharray="4 4"/><path d="${d} L${X(pts.length-1)} ${Y(0)} L${X(0)} ${Y(0)} Z" fill="${col}" fill-opacity=".1"/><path d="${d}" fill="none" stroke="${col}" stroke-width="2"/>
+   <text x="${W-10}" y="18" text-anchor="end" fill="${col}" font-size="13" font-weight="800">${last>=0?'+':''}${last.toFixed(1)}R</text><text x="${W-10}" y="34" text-anchor="end" fill="#8a91a3" font-size="11">Jatuh paling dalam: -${dd.toFixed(1)}R</text>`;}
 
 // ---------- TAB BAWAH
 function showTab(t){[...$('tabbar').children].forEach(b=>b.classList.toggle('on',b.dataset.t===t));document.querySelectorAll('.tpane').forEach(p=>p.hidden=p.dataset.p!==t);store.set('tab',t);if(t==='lot')renderLot();if(t==='news')renderNews();}
@@ -858,12 +895,19 @@ function buildSet(){$('settings').innerHTML=F.map(([k,l,t])=>t==='h'||!l?`<div c
    <button id="btnPush" style="width:100%;margin-top:8px">🔔 Aktifkan notifikasi latar belakang</button><div id="pushMsg" class="k" style="margin-top:6px"></div>
    <div id="pushOut" hidden><textarea id="pushSub" class="code" readonly></textarea><button id="btnCopy" style="width:100%;margin-top:6px">Salin kod</button></div>`);
   $('btnPush').onclick=enablePush;
+  $('settings').insertAdjacentHTML('beforeend',`<div class="k" style="margin:14px 0 2px;font-weight:800;letter-spacing:1px;color:var(--gold)">SAMAKAN NOTIFIKASI DENGAN DASHBOARD</div>
+   <div class="help" style="margin-top:2px">Senarai variable GitHub ikut setting dashboard sekarang. Masukkan setiap satu di GitHub → Settings → Secrets and variables → Actions → <b>Variables</b> (Name = sebelah kiri, Value = sebelah kanan).</div>
+   <textarea id="ghVars" class="code" readonly style="height:150px"></textarea><button id="btnGh" style="width:100%;margin-top:6px">📋 Salin senarai variable</button>`);
+  const tfsNow=store.get('ghTfs','M15,H1');
+  $('ghVars').value=[['SZ_PULLBACK',!!cfg.pullback],['SZ_EXT',!!cfg.extFilter],['SZ_RR',cfg.rr],['SZ_REQUIRE_ZONE',!!cfg.requireZone],['SZ_REQUIRE_HTF',!!cfg.requireHTF],['SZ_REQUIRE_BBMA',!!cfg.requireBBMA],
+    ['SZ_ROOM',!!cfg.roomFilter],['SZ_SESS_LN',!!cfg.sessLN],['SZ_ASIA_FILTER',!!cfg.asiaFilter],['SZ_BBW',!!cfg.bbwFilter],['SZ_SL_STRUCT',!!cfg.slStruct],['SZ_BE_R',+cfg.beR||0],['SZ_TFS',tfsNow]].map(([k,v])=>k+' = '+v).join('\n');
+  $('btnGh').onclick=async()=>{try{await navigator.clipboard.writeText($('ghVars').value);$('btnGh').textContent='Disalin ✓';}catch(e){$('ghVars').select();$('btnGh').textContent='Tekan lama & salin';}setTimeout(()=>$('btnGh').textContent='📋 Salin senarai variable',2500);};
   $('btnCopy').onclick=async()=>{const t=$('pushSub');try{await navigator.clipboard.writeText(t.value);$('btnCopy').textContent='Disalin ✓';}catch(e){t.focus();t.select();$('btnCopy').textContent='Tekan lama & salin';}setTimeout(()=>$('btnCopy').textContent='Salin kod',2500);};
   $('notif').onclick=async()=>{try{const p=await Notification.requestPermission();$('notif').textContent=p==='granted'?'Aktif ✓':'Ditolak';}catch(e){$('notif').textContent='Tak disokong';}};}
 F.forEach(f=>{if(f.length===2)f.splice(1,0,'');});
 buildSet();
 $('saveSet').onclick=()=>{F.forEach(([k,,t])=>{if(t==='h')return;const el=$('s_'+k);if(!el)return;cfg[k]=t==='b'?el.checked:+el.value;});store.set('cfg',cfg);refresh(true);banner('Setting disimpan.');};
-$('resetSet').onclick=()=>{cfg=Object.assign({},WaddeySZ.DEF);store.set('cfg',{});buildSet();refresh(true);};
+$('resetSet').onclick=()=>{cfg=Object.assign({},DASH_DEF);store.set('cfg',{});buildSet();refresh(true);};
 
 if('serviceWorker'in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}
 try{showTab(store.get('tab','zb'));}catch(e){showTab('zb');}

@@ -1,5 +1,5 @@
 // Service worker Waddey Signal Zone: simpan fail app supaya boleh dipasang sebagai app.
-const CACHE = 'waddey-sz-v11';
+const CACHE = 'waddey-sz-v12';
 const SHELL = ['./', 'index.html', 'sz-engine.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'icon-180.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE && k.startsWith('waddey-sz')).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
