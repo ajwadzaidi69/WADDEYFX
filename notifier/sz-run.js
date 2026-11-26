@@ -20,6 +20,11 @@ const CFG = {
   slStruct: env('SZ_SL_STRUCT', 'false') === 'true',
   requireHTF: env('SZ_REQUIRE_HTF', 'false') === 'true',
   beR: parseFloat(env('SZ_BE_R', '0')) || 0,
+  roomFilter: env('SZ_ROOM', 'false') === 'true',
+  pullback: env('SZ_PULLBACK', 'false') === 'true',
+  sessLN: env('SZ_SESS_LN', 'false') === 'true',
+  extFilter: env('SZ_EXT', 'false') === 'true',
+  bbwFilter: env('SZ_BBW', 'false') === 'true',
   rr: parseFloat(env('SZ_RR', '3')) || 3
 };
 const ALERT_TPSL = env('SZ_ALERT_TPSL', 'true') === 'true';
