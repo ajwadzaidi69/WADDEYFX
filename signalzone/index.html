@@ -700,7 +700,6 @@ $('optBody').addEventListener('click',e=>{const b=e.target.closest('[data-oi]');
 // ---------- TAB BAWAH
 function showTab(t){[...$('tabbar').children].forEach(b=>b.classList.toggle('on',b.dataset.t===t));document.querySelectorAll('.tpane').forEach(p=>p.hidden=p.dataset.p!==t);store.set('tab',t);if(t==='lot')renderLot();if(t==='news')renderNews();}
 $('tabbar').onclick=e=>{const b=e.target.closest('button');if(b)showTab(b.dataset.t);};
-showTab(store.get('tab','zb'));
 // ---------- KALKULATOR LOT
 const CONTRACT=s=>s==='frxXAUUSD'?100:s==='frxXAGUSD'?5000:100000;
 let lot=Object.assign({acc:'std',bal:1000,risk:1},store.get('lot',{}));
@@ -855,6 +854,7 @@ $('saveSet').onclick=()=>{F.forEach(([k,,t])=>{if(t==='h')return;const el=$('s_'
 $('resetSet').onclick=()=>{cfg=Object.assign({},WaddeySZ.DEF);store.set('cfg',{});buildSet();refresh(true);};
 
 if('serviceWorker'in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}
+try{showTab(store.get('tab','zb'));}catch(e){showTab('zb');}
 sizeAll();refresh(true);loadNews();setInterval(loadNews,15*60000);setInterval(()=>{renderNews();},60000);
 {const v=store.get('view','dash');if(v!=='dash')setTimeout(()=>showView(v),50);}
 })();
