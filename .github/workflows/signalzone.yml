@@ -43,6 +43,14 @@ jobs:
           SZ_REQUIRE_BBMA: ${{ vars.SZ_REQUIRE_BBMA }}
           SZ_ASIA_FILTER: ${{ vars.SZ_ASIA_FILTER }}
           SZ_RR: ${{ vars.SZ_RR }}
+          SZ_SL_STRUCT: ${{ vars.SZ_SL_STRUCT }}
+          SZ_REQUIRE_HTF: ${{ vars.SZ_REQUIRE_HTF }}
+          SZ_BE_R: ${{ vars.SZ_BE_R }}
+          SZ_ROOM: ${{ vars.SZ_ROOM }}
+          SZ_PULLBACK: ${{ vars.SZ_PULLBACK }}
+          SZ_SESS_LN: ${{ vars.SZ_SESS_LN }}
+          SZ_EXT: ${{ vars.SZ_EXT }}
+          SZ_BBW: ${{ vars.SZ_BBW }}
           BROKER_OFFSET: ${{ vars.BROKER_OFFSET }}
           TEST: ${{ inputs.test }}
         run: node sz-run.js
