@@ -349,7 +349,7 @@ textarea.code{width:100%;height:90px;font:11px ui-monospace,monospace;background
     </div>
   </section>
 
-  <div class="foot">Data harga: Deriv (mungkin berbeza sedikit dengan broker MT5). Semua signal dikira selepas candle tutup.<br>Alat bantuan analisis, bukan nasihat kewangan.</div>
+  <div class="foot">Versi dashboard: <b>v13 · 27 Nov</b><br>Data harga: Deriv (mungkin berbeza sedikit dengan broker MT5). Semua signal dikira selepas candle tutup.<br>Alat bantuan analisis, bukan nasihat kewangan.</div>
 </main>
 
 <dialog id="jDlg"><form method="dialog">
@@ -859,7 +859,8 @@ async function refresh(force){if(busy){pendingRefresh=true;return;}busy=true;con
     const firstLoad=Object.keys(logDB).length===0;const added=logUpsert(R,tf);
     if(!firstLoad&&added>0&&$('viewLog').hidden){unseen+=added;store.set('unseen',unseen);setBadge();}
     if(!$('viewLog').hidden)renderLog();
-    if(!tickSub){try{const r=await send({ticks:sym,subscribe:1});tickSub=r.subscription&&r.subscription.id;if(r.tick)onTick(+r.tick.epoch,+r.tick.quote);}catch(e){}}
+    if(!tickSub){try{const r=await send({ticks:sym,subscribe:1});tickSub=r.subscription&&r.subscription.id;tickErr='';if(r.tick)onTick(+r.tick.epoch,+r.tick.quote);}catch(e){tickErr=e.message||'tick gagal';}}
+    if(live==null&&bars.length){$('price').textContent=fx(all[all.length-1].c);showStale();}
     try{if(dayOpen==null||force){const d=await candles(86400,2);dayOpen=d.length?d[d.length-1].o:null;if(live!=null)updChg();}}catch(e){}
     conn('ok');if(!$('banner').textContent.startsWith('🔔'))banner('');
     loadMTF(force);
@@ -867,18 +868,22 @@ async function refresh(force){if(busy){pendingRefresh=true;return;}busy=true;con
   finally{busy=false;if(pendingRefresh){pendingRefresh=false;setTimeout(()=>refresh(true),0);}}}
 let lastRender=0;
 function updChg(){if(!dayOpen||live==null)return;const ch=live-dayOpen,pc=ch/dayOpen*100;$('chg').textContent=`${ch>=0?'+':''}${fxd(ch)} (${pc>=0?'+':''}${pc.toFixed(2)}%) hari ini`;$('chg').className='chg '+(ch>=0?'bull':'bear');}
-function onTick(ep,p){live=p;$('price').textContent=fx(p);updChg();
+let lastTickAt=0,tickErr='';
+function showStale(){if(live!=null&&Date.now()-lastTickAt<120000)return;const lt=all.length?all[all.length-1].t:0;
+  const msg=tickErr?('⚠️ Tiada harga live: '+tickErr):(lt?'⚠️ Tiada harga live sejak '+ago(lastTickAt?lastTickAt/1000:lt)+'. Pasaran mungkin tutup (cuti / hujung minggu). Harga candle terakhir dipaparkan.':'⚠️ Menunggu harga live…');
+  $('chg').textContent=msg;$('chg').className='chg gold';}
+function onTick(ep,p){live=p;lastTickAt=Date.now();$('price').textContent=fx(p);updChg();
   if(!cur)return;const sec=TFS[tf],bs=bucket(ep,sec);
   if(bs>cur.time){cur={time:bs,open:p,high:p,low:p,close:p};cs.update(cur);setTimeout(()=>refresh(),1500);return;}
   if(bs<cur.time)return;cur.high=Math.max(cur.high,p);cur.low=Math.min(cur.low,p);cur.close=p;cs.update(cur);
   if(R&&Date.now()-lastRender>3000){lastRender=Date.now();renderTrade();if(!$('viewSimple').hidden)renderSimple();}}
-setInterval(()=>{const sec=TFS[tf],n=nowS(),left=Math.max(0,Math.ceil(bucket(n,sec)+sec-n));
+setInterval(()=>{if(bars.length&&(live==null||Date.now()-lastTickAt>120000))showStale();const sec=TFS[tf],n=nowS(),left=Math.max(0,Math.ceil(bucket(n,sec)+sec-n));
   const dd=Math.floor(left/86400),h=Math.floor(left%86400/3600),m=Math.floor(left%3600/60),s=left%60;$('timer').textContent=(dd?dd+'h ':'')+(h||dd?h+':':'')+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
   if(!$('viewSimple').hidden)$('sTimer').textContent=$('timer').textContent;
   const ss=session();$('sess').innerHTML=`Sesi <b class="${ss[2]==='b'?'bull':'mut'}">${ss[0]}</b>`;},1000);
 setInterval(()=>{if(!busy&&(!ws||ws.readyState!==1))refresh();},30000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});
-$('sym').onchange=async()=>{sym=$('sym').value;store.set('sym',sym);if(tickSub){try{await send({forget:tickSub})}catch(e){}tickSub=null;}cur=null;live=null;dayOpen=null;mtfData={};mtfAt=0;refresh(true);};
+$('sym').onchange=async()=>{sym=$('sym').value;store.set('sym',sym);if(tickSub){try{await send({forget:tickSub})}catch(e){}tickSub=null;}cur=null;live=null;lastTickAt=0;tickErr='';dayOpen=null;mtfData={};mtfAt=0;refresh(true);};
 
 // ---------- setting
 const F=[['Signal','h'],['rr','Risk:Reward (TP akhir)','n'],['slStruct','SL ikut struktur (swing / zon)','b'],['beR','Breakeven: alih SL ke Entry selepas untung X R (0 = tiada)','n'],['slMult','SL multiplier (x ATR, bila SL struktur off)','n'],['structBars','SL struktur: cari swing dalam X candle','n'],['emaFast','Fast EMA','n'],['emaSlow','Slow EMA','n'],['confirm','Wajib candle pengesahan','b'],

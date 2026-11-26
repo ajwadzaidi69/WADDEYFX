@@ -1,12 +1,14 @@
 // Service worker Waddey Signal Zone: simpan fail app supaya boleh dipasang sebagai app.
-const CACHE = 'waddey-sz-v12';
+const CACHE = 'waddey-sz-v13';
 const SHELL = ['./', 'index.html', 'sz-engine.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'icon-180.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE && k.startsWith('waddey-sz')).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET' || !req.url.startsWith('http')) return;
-  e.respondWith(fetch(req).then(res => {
+  // fail app sendiri: sentiasa semak versi terbaru dengan server (elak versi lama tersangkut dalam cache browser)
+  const same = new URL(req.url).origin === self.location.origin;
+  e.respondWith(fetch(same ? new Request(req, { cache: 'no-cache' }) : req).then(res => {
     if (res && (res.ok || res.type === 'opaque')) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
     return res;
   }).catch(() => caches.match(req).then(r => r || caches.match('index.html'))));
