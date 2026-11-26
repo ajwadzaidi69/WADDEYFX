@@ -386,7 +386,7 @@ body.fsOn{overflow:hidden}body.fsOn nav.bnav{display:none}
     </div>
   </section>
 
-  <div class="foot">Versi dashboard: <b>v15 · 27 Nov</b><br>Data harga: Deriv (mungkin berbeza sedikit dengan broker MT5). Semua signal dikira selepas candle tutup.<br>Alat bantuan analisis, bukan nasihat kewangan.</div>
+  <div class="foot">Versi dashboard: <b>v16 · 27 Nov</b><br>Data harga: Deriv (mungkin berbeza sedikit dengan broker MT5). Semua signal dikira selepas candle tutup.<br>Alat bantuan analisis, bukan nasihat kewangan.</div>
 </main>
 
 <dialog id="jDlg"><form method="dialog">
@@ -413,11 +413,12 @@ const $=id=>document.getElementById(id);
 const store={get(k,d){try{const v=localStorage.getItem('wsz_'+k);return v==null?d:JSON.parse(v);}catch(e){return d;}},set(k,v){try{localStorage.setItem('wsz_'+k,JSON.stringify(v));}catch(e){}}};
 // Kaedah pilihan (#4 dari Uji Strategi): EMA + Pullback + Tak terlalu jauh, TP 1.5R
 const METHOD={requireZone:false,requireBBMA:false,requireHTF:false,asiaFilter:false,sessLN:false,roomFilter:false,bbwFilter:false,slStruct:false,beR:0,pullback:true,extFilter:true,rr:1.5};
-const DASH_DEF=Object.assign({},WaddeySZ.DEF,{setupAlert:'off'},METHOD);
+const DASH_DEF=Object.assign({},WaddeySZ.DEF,{setupAlert:'off',newsFilter:true},METHOD);
 if(store.get('cfgVer',0)<2){const old=store.get('cfg',{});store.set('cfg',Object.assign({},old,METHOD));store.set('cfgVer',2);}
 let sym=store.get('sym','frxXAUUSD'),tf=store.get('tf','M5'),cfg=Object.assign({},DASH_DEF,store.get('cfg',{})),show=Object.assign({ema:true,bb:true,ma:false,e50:true,zone:true,setup:true,setupF:'all'},store.get('show',{}));
 let ws=null,ep=0,rid=1,pend=new Map(),tickSub=null,srvOff=0,R=null,bars=[],all=[],busy=false,cur=null,live=null,dayOpen=null;
 if(cfg.setupAlert==null||(cfg.alertBB&&cfg.setupAlert==='off'&&!store.get('saMig',0))){cfg.setupAlert=cfg.alertBB?'all':'off';store.set('saMig',1);}
+if(cfg.newsFilter==null||!store.get('nfMig',0)){cfg.newsFilter=true;store.set('nfMig',1);store.set('cfg',cfg);}
 let lastAlertKey=store.get('lastAlert',''),mtfData={},mtfAt=0;
 $('sym').value=sym;
 
@@ -492,6 +493,7 @@ function setMarkers(){const m=[];const from=R.T[Math.max(R.S,R.T.length-400)];
     else if(x.type==='sl')m.push({time:x.t,position:'belowBar',color:'#ef4444',shape:'circle',text:'SL'});
     else if(x.type==='be')m.push({time:x.t,position:'aboveBar',color:'#94a3b8',shape:'circle',text:'BE'});
     else if(x.type==='inv')m.push({time:x.t,position:'aboveBar',color:'#facc15',shape:'square',text:x.txt});
+    else if(x.type==='nblk')m.push({time:x.t,position:'aboveBar',color:'#94a3b8',shape:'square',text:'✕ Berita'});
     else if(x.type==='tpn')m.push({time:x.t,position:'aboveBar',color:'#86efac',shape:'circle',text:x.txt});
     else if(show.setup&&x.type==='bbB'&&setupOK(x))m.push({time:x.t,position:'belowBar',color:x.lengkap?'#facc15':'#14b8a6',shape:x.lengkap?'arrowUp':'circle',text:x.txt});
     else if(show.setup&&x.type==='bbS'&&setupOK(x))m.push({time:x.t,position:'aboveBar',color:x.lengkap?'#facc15':'#f472b6',shape:x.lengkap?'arrowDown':'circle',text:x.txt});});
@@ -789,7 +791,7 @@ $('optBody').addEventListener('click',e=>{const b=e.target.closest('[data-oi]');
 
 // ---------- KAEDAH AKTIF
 function methodParts(c){const p=[];p.push(srcName(c));if(c.pullback)p.push('Pullback');if(c.extFilter)p.push('Tak terlalu jauh');if(c.requireZone)p.push('Zon');if(c.requireHTF)p.push('TF besar');if(c.requireBBMA)p.push('BBMA');
-  if(c.roomFilter)p.push('Ruang ke TP');if(c.sessLN)p.push('London+NY');if(c.asiaFilter)p.push('Tanpa Asia');if(c.bbwFilter)p.push('BB tak sempit');p.push('TP '+c.rr+'R');p.push(c.slStruct?'SL struktur':'SL ATR');if(+c.beR)p.push('BE '+c.beR+'R');return p;}
+  if(c.roomFilter)p.push('Ruang ke TP');if(c.sessLN)p.push('London+NY');if(c.asiaFilter)p.push('Tanpa Asia');if(c.bbwFilter)p.push('BB tak sempit');if(c.newsFilter)p.push('Tapis berita');p.push('TP '+c.rr+'R');p.push(c.slStruct?'SL struktur':'SL ATR');if(+c.beR)p.push('BE '+c.beR+'R');return p;}
 function renderMethod(){const isM=Object.keys(METHOD).every(k=>(+cfg[k]||0)===(+METHOD[k]||0))&&(cfg.entrySrc||'ema')==='ema';
   const h='<span class="lab">Kaedah:</span>'+methodParts(cfg).map(x=>`<span>${x}</span>`).join('')+(isM?'<span style="color:var(--bull);border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.1)">✓ Kaedah #4</span>':'');
   $('vMethod').innerHTML=h;$('sMethod').innerHTML=h;}
@@ -859,12 +861,14 @@ function renderLot(){const cent=lot.acc==='cent',cur=cent?'USC':'$';$('lBalLab')
   $('lotRisk').textContent=cur+' '+(lu*cs*slD).toFixed(2);$('lotGain').textContent=cur+' '+(lu*cs*slD*cfg.rr).toFixed(2);$('lotPip').textContent=cur+' '+(lu*cs).toFixed(2);}
 
 // ---------- BERITA
-let news=[],newsUpd=0;
+let news=[],newsUpd=0,newsKey='';
+const newsTimes=()=>news.filter(e=>e.impact==='High'&&e.country==='USD').map(e=>e.t);
 async function loadNews(){try{let ok=false;
     try{const r=await fetch('https://nfs.faireconomy.media/ff_calendar_thisweek.json',{cache:'no-store'});if(r.ok){const j=await r.json();
       news=j.filter(e=>e.country==='USD'&&(e.impact==='High'||e.impact==='Medium')).map(e=>({t:Math.floor(new Date(e.date).getTime()/1000),title:e.title,country:e.country,impact:e.impact,forecast:e.forecast||'',previous:e.previous||''}));newsUpd=Date.now()/1000;ok=true;}}catch(e){}
     if(!ok){const r=await fetch('news.json?'+Date.now(),{cache:'no-store'});const j=await r.json();news=j.events||[];newsUpd=j.updated||0;}
     store.set('news',{news,newsUpd});}catch(e){const c=store.get('news',null);if(c){news=c.news;newsUpd=c.newsUpd;}}
+  const nk=newsTimes().join(',');if(nk!==newsKey){newsKey=nk;if(cfg.newsFilter&&R)refresh();}
   renderNews();if(R)render();}
 function newsNear(){const n=nowS();const hi=news.filter(e=>e.impact==='High');
   const soon=hi.find(e=>e.t-n>0&&e.t-n<=1800),just=hi.find(e=>n-e.t>=0&&n-e.t<=900);
@@ -927,8 +931,13 @@ async function loadMTF(force){if(!force&&Date.now()-mtfAt<120000)return;mtfAt=Da
 
 // ---------- notifikasi (bila app dibuka)
 function notify(){const f=R.last||{};let msg='';const k=R.T[R.T.length-1];
-  if(f.buy||f.sell){const s=R.marks.filter(x=>x.k===R.T.length-1&&(x.type==='buy'||x.type==='sell')).pop();if(s)msg=`${s.txt}${s.tags.length?' ('+s.tags.join(', ')+')':''} @ ${fx(s.price)} | SL ${fx(s.sl)} | TP ${fx(s.tp)}`;}
-  else if(f.tp)msg='TP akhir kena ✅';else if(f.sl)msg='SL kena';else if(f.be)msg='Breakeven: trade ditutup di Entry (0R)';else{const st=R.marks.filter(x=>x.k===R.T.length-1&&WaddeySZ.setupMatch(x,cfg.setupAlert)).pop();if(st)msg=`${st.lengkap?'⭐ Setup BBMA lengkap':'Setup BBMA'} ${st.type==='bbB'?'BUY':'SELL'} ${st.txt}`;}
+  const st=R.marks.filter(x=>x.k===R.T.length-1&&WaddeySZ.setupMatch(x,cfg.setupAlert)).pop();
+  const stTxt=x=>`${x.lengkap?'⭐ Setup BBMA lengkap':'Setup BBMA'} ${x.type==='bbB'?'BUY':'SELL'} ${x.txt}`;
+  if(f.buy||f.sell){const s=R.marks.filter(x=>x.k===R.T.length-1&&(x.type==='buy'||x.type==='sell')).pop();
+    if(s){msg=`${s.txt}${s.tags.length?' ('+s.tags.join(', ')+')':''} @ ${fx(s.price)} | SL ${fx(s.sl)} | TP ${fx(s.tp)}`;if(st&&(st.type==='bbB')===(s.type==='buy'))msg+=' · '+stTxt(st);}}
+  else if(f.tp)msg='TP akhir kena ✅';else if(f.sl)msg='SL kena';else if(f.be)msg='Breakeven: trade ditutup di Entry (0R)';
+  else if(f.news)msg='Signal disekat: berita USD impak tinggi dalam 30 minit. Jangan buka trade baru.';
+  else if(st)msg=stTxt(st);
   if(!msg)return;const key=sym+tf+k+msg;if(key===lastAlertKey)return;const first=lastAlertKey==='';lastAlertKey=key;store.set('lastAlert',key);if(first)return;
   const full=`${symName()} ${tf}: ${msg}`;banner('🔔 '+full);beep(f.sl?'sl':f.tp?'tp':'sig');
   try{navigator.vibrate&&navigator.vibrate([250,120,250]);}catch(e){}
@@ -944,7 +953,7 @@ async function refresh(force){if(busy){pendingRefresh=true;return;}busy=true;con
     all=got;const n=nowS();bars=all.filter(b=>b.t+TFS[tf]<=n+1);barsTf=tf;barsSym=sym;
     if(bars.length<80)throw new Error('data tak cukup');
     const htf=await htfDirs().catch(()=>null);   // sentiasa ambil: perlu untuk gred setup BBMA
-    R=WaddeySZ.compute(bars,Object.assign({},cfg,{tfSec:TFS[tf],htf}),1500);
+    R=WaddeySZ.compute(bars,Object.assign({},cfg,{tfSec:TFS[tf],htf,newsT:newsTimes()}),1500);
     cs.setData(all.map(b=>({time:b.t,open:b.o,high:b.h,low:b.l,close:b.c})));
     const z=all[all.length-1];cur={time:z.t,open:z.o,high:z.h,low:z.l,close:z.c};
     lastDataAt=Date.now();if(liveHit&&!(R.pos&&liveHit.key===(R.pos.t+'|'+R.pos.entry)))liveHit=null;
@@ -983,8 +992,8 @@ const F=[['Signal','h'],['entrySrc','Pencetus entry','s',[['ema','EMA 5/13 (kaed
  ['Penapis','h'],['requireZone','Wajib: signal di zon Supply/Demand','b'],['requireBBMA','Wajib: signal searah trend BBMA','b'],['requireHTF','Wajib: TF besar searah (EMA 5/13)','b'],['roomFilter','Ruang ke TP: tiada zon lawan sebelum TP','b'],['pullback','Entry pullback (tunggu harga tarik balik)','b'],['sessLN','Sesi London + New York sahaja (15:00–01:00 MYT)','b'],['extFilter','Buang signal bila harga terlalu jauh','b'],['bbwFilter','Buang signal bila Bollinger Band terlalu sempit','b'],['zoneBars','Zon disentuh dalam X bar','n'],
  ['Zon','h'],['maxSupply','Max zon Supply','n'],['maxDemand','Max zon Demand','n'],['minZH','Tinggi zon minimum (x ATR)','n'],['maxZH','Tinggi zon maksimum (x ATR)','n'],
  ['BBMA','h'],['bbLen','Bollinger period','n'],['bbDev','Bollinger deviation','n'],['bbEma','EMA trend','n'],['reCooldown','Jarak minimum RE (bar)','n'],
- ['Sesi','h'],['asiaFilter','Sembunyi signal sesi Asia (08:00–15:00 MYT, TF H1 ke bawah)','b'],
- ['Notifikasi','h'],['setupAlert','Notifikasi setup BBMA','s',[['off','Tutup'],['re3','RE ★★★ sahaja'],['lengkap','Setup lengkap sahaja'],['all3','Semua setup ★★★'],['all','Semua setup']]]];
+ ['Sesi','h'],['newsFilter','Tapis berita: tiada signal baru 30 minit sebelum & selepas berita USD impak tinggi','b'],['asiaFilter','Sembunyi signal sesi Asia (08:00–15:00 MYT, TF H1 ke bawah)','b'],
+ ['Notifikasi','h'],['setupAlert','Notifikasi setup BBMA','s',[['off','Tutup'],['re3','RE ★★★ sahaja'],['lengkap','Setup lengkap sahaja'],['all3','Semua setup ★★★'],['lengkap,all3','Setup lengkap + semua ★★★'],['all','Semua setup']]]];
 function buildSet(){$('settings').innerHTML=F.map(([k,l,t,opts])=>t==='h'||!l?`<div class="k" style="margin:12px 0 2px;font-weight:800;letter-spacing:1px;color:var(--gold)">${k.toUpperCase()}</div>`:
   `<div class="srow"><span>${l}</span>${t==='b'?`<input type="checkbox" id="s_${k}"${cfg[k]?' checked':''}>`:t==='s'?`<select id="s_${k}">${opts.map(([v,n])=>`<option value="${v}"${String(cfg[k])===v?' selected':''}>${n}</option>`).join('')}</select>`:`<input type="number" step="any" id="s_${k}" value="${cfg[k]}">`}</div>`).join('')+
   `<div class="srow"><span>Notifikasi telefon (bila app dibuka)</span><button id="notif">${'Notification'in window&&Notification.permission==='granted'?'Aktif ✓':'Benarkan'}</button></div>`;
@@ -1000,7 +1009,7 @@ function buildSet(){$('settings').innerHTML=F.map(([k,l,t,opts])=>t==='h'||!l?`<
    <textarea id="ghVars" class="code" readonly style="height:150px"></textarea><button id="btnGh" style="width:100%;margin-top:6px">📋 Salin senarai variable</button>`);
   const tfsNow=store.get('ghTfs','M15,H1');
   $('ghVars').value=[['SZ_PULLBACK',!!cfg.pullback],['SZ_EXT',!!cfg.extFilter],['SZ_RR',cfg.rr],['SZ_REQUIRE_ZONE',!!cfg.requireZone],['SZ_REQUIRE_HTF',!!cfg.requireHTF],['SZ_REQUIRE_BBMA',!!cfg.requireBBMA],
-    ['SZ_ROOM',!!cfg.roomFilter],['SZ_SESS_LN',!!cfg.sessLN],['SZ_ASIA_FILTER',!!cfg.asiaFilter],['SZ_BBW',!!cfg.bbwFilter],['SZ_SL_STRUCT',!!cfg.slStruct],['SZ_BE_R',+cfg.beR||0],['SZ_ENTRY_SRC',cfg.entrySrc||'ema'],['SZ_MIN_GRADE',+cfg.minGrade||1],['SZ_SETUP_ALERT',cfg.setupAlert||'off'],['SZ_TFS',tfsNow]].map(([k,v])=>k+' = '+v).join('\n');
+    ['SZ_ROOM',!!cfg.roomFilter],['SZ_SESS_LN',!!cfg.sessLN],['SZ_ASIA_FILTER',!!cfg.asiaFilter],['SZ_BBW',!!cfg.bbwFilter],['SZ_SL_STRUCT',!!cfg.slStruct],['SZ_BE_R',+cfg.beR||0],['SZ_ENTRY_SRC',cfg.entrySrc||'ema'],['SZ_MIN_GRADE',+cfg.minGrade||1],['SZ_SETUP_ALERT',cfg.setupAlert||'off'],['SZ_NEWS_FILTER',!!cfg.newsFilter],['SZ_TFS',tfsNow]].map(([k,v])=>k+' = '+v).join('\n');
   $('btnGh').onclick=async()=>{try{await navigator.clipboard.writeText($('ghVars').value);$('btnGh').textContent='Disalin ✓';}catch(e){$('ghVars').select();$('btnGh').textContent='Tekan lama & salin';}setTimeout(()=>$('btnGh').textContent='📋 Salin senarai variable',2500);};
   $('btnCopy').onclick=async()=>{const t=$('pushSub');try{await navigator.clipboard.writeText(t.value);$('btnCopy').textContent='Disalin ✓';}catch(e){t.focus();t.select();$('btnCopy').textContent='Tekan lama & salin';}setTimeout(()=>$('btnCopy').textContent='Salin kod',2500);};
   $('notif').onclick=async()=>{try{const p=await Notification.requestPermission();$('notif').textContent=p==='granted'?'Aktif ✓':'Ditolak';}catch(e){$('notif').textContent='Tak disokong';}};}

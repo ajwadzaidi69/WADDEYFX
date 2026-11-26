@@ -11,6 +11,7 @@ const DEF = {
   bbLen: 20, bbDev: 2.0, maFast: 5, maSlow: 10, bbEma: 50, reCooldown: 3, requireBBMA: false,
   showExt: true, showMom: true, showCsa: true, showRe: true, showMhv: true,
   entrySrc: 'ema' /*ema | re | csa_ext | ema_re | lengkap*/, minGrade: 1, seqBars: 60, mhvATR: 0.3, nearE50: 3.0, fwdBars: 30,
+  newsFilter: false, newsT: null, newsMin: 30,   // tapis berita: tiada trade baru +/- newsMin minit dari berita impak tinggi (newsT = [epoch saat])
   slStruct: false, structBars: 10, structBuf: 0.2, minSLATR: 0.5, maxSLATR: 4.0, // SL ikut struktur (swing / zon)
   beR: 0,
   roomFilter: false, pullback: false, pbBars: 3, sessLN: false, extFilter: false, extCandleATR: 2.0, extEmaATR: 3.0, bbwFilter: false,   // breakeven: alih SL ke entry selepas untung X R (0 = tiada)
@@ -95,8 +96,10 @@ function compute(bars, cfgIn, startBars) {
   const HT = P.htf && P.htf.length ? P.htf : null; let hi0 = 0;
   const htfDir = tClose => { if (!HT) return 0; while (hi0 + 1 < HT.length && HT[hi0 + 1].t <= tClose) hi0++; return HT[hi0].t <= tClose ? HT[hi0].d : 0; };
   let lastFlags = {}; let pend = null, seqB = null, seqS = null;
+  const NW = P.newsFilter && P.newsT && P.newsT.length ? P.newsT.slice().sort((a, b) => a - b) : null;
+  const inNews = t => !!NW && NW.some(n => Math.abs(t - n) <= P.newsMin * 60);
   for (let k = S; k < N; k++) {
-    const last = k === N - 1;
+    const last = k === N - 1; let newsBlk = false;
     zoneStep(k);
     let supT = false, supB = false, demT = false, demB = false;
     Sup.forEach(z => { if (H[k] >= z.bot && L[k] <= z.top) { supT = true; lastSupTouch = k; lastSupStr = strength(z.score); lastSupTop = z.top; } if (C[k] > z.top) supB = true; });
@@ -175,6 +178,7 @@ function compute(bars, cfgIn, startBars) {
     if (P.requireBBMA) { buy = buy && BTr[k] === 1; sell = sell && BTr[k] === -1; }
     if (P.requireHTF && HT) { buy = buy && hdK === 1; sell = sell && hdK === -1; }
     if (P.asiaFilter && P.tfSec <= 3600) { const hh = new Date((T[k] + P.tfSec) * 1000).getUTCHours(); if (hh >= 0 && hh < 7) { buy = false; sell = false; } }
+    if (NW && (buy || sell) && inNews(T[k] + P.tfSec)) { buy = false; sell = false; newsBlk = true; }
 
     // ---- penapis tambahan (dipilih melalui Uji Strategi)
     if (P.sessLN && P.tfSec <= 3600) { const hh = new Date((T[k] + P.tfSec) * 1000).getUTCHours(); if (hh < 7 || hh >= 17) { buy = false; sell = false; } }
@@ -215,6 +219,7 @@ function compute(bars, cfgIn, startBars) {
     if (pend && !(inPos && posType === pend.d)) {
       const d = pend.d;
       if (k - pend.k0 > P.pbBars || (d > 0 ? L[k] <= pend.sl0 : H[k] >= pend.sl0)) pend = null;
+      else if (NW && (inNews(T[k]) || inNews(T[k] + P.tfSec))) { pend = null; newsBlk = true; }   // berita: batal order menunggu
       else if (d > 0 ? L[k] <= pend.level : H[k] >= pend.level) {
         const pl = plan(d, pend.k0, pend.level, pend.zT);
         if (pl) openPos(d, pl, pend.tags);
@@ -236,12 +241,13 @@ function compute(bars, cfgIn, startBars) {
       if (pl) openPos(d, pl, sigTags(d));
     }
     const showBuy = !!opened && opened.d > 0, showSell = !!opened && opened.d < 0;
+    if (newsBlk) Mk.push({ k, t: T[k], type: 'nblk', txt: 'Disekat berita' });
     if (tpFinal) Mk.push({ k, t: T[k], type: 'tp', txt: 'TP' });
     if (slHit) Mk.push(beAtExit ? { k, t: T[k], type: 'be', txt: 'BE' } : { k, t: T[k], type: 'sl', txt: 'SL' });
     if (inv) Mk.push({ k, t: T[k], type: 'inv', txt: invType > 0 ? 'INV BUY' : 'INV SELL' });
     if (opened) Mk.push({ k, t: T[k], type: opened.d > 0 ? 'buy' : 'sell', txt: opened.d > 0 ? 'BUY' : 'SELL', tags: opened.tags.slice(), price: entry, sl, tp });
     if (!showBuy && !showSell && inPos) newHits.forEach(i => Mk.push({ k, t: T[k], type: 'tpn', txt: 'TP' + (i + 1) }));
-    if (last) lastFlags = { buy: showBuy, sell: showSell, tp: tpFinal, sl: slHit && !beAtExit, be: slHit && beAtExit, inv, supT, demT, supB, demB, bb: (lo.length ? 'BBMA BUY ' + lo.join(' ') + ' ' + star(gB) : '') + (hi.length ? ' BBMA SELL ' + hi.join(' ') + ' ' + star(gS) : '') };
+    if (last) lastFlags = { news: newsBlk, buy: showBuy, sell: showSell, tp: tpFinal, sl: slHit && !beAtExit, be: slHit && beAtExit, inv, supT, demT, supB, demB, bb: (lo.length ? 'BBMA BUY ' + lo.join(' ') + ' ' + star(gB) : '') + (hi.length ? ' BBMA SELL ' + hi.join(' ') + ' ' + star(gS) : '') };
   }
   // keputusan ke depan setiap setup (statistik sahaja): entry tutup candle, SL 1 ATR, TP 1 ATR (1R), dalam fwdBars candle
   Mk.forEach(m => {
@@ -272,7 +278,9 @@ function compute(bars, cfgIn, startBars) {
 }
 function setupMatch(m, mode) {
   if (!m || !m.list || (m.type !== 'bbB' && m.type !== 'bbS')) return false;
-  switch (mode) {
+  const modes = String(mode || 'off').split(',').map(x => x.trim()).filter(Boolean);   // boleh lebih dari satu: "lengkap,all3"
+  if (modes.length > 1) return modes.some(x => setupMatch(m, x));
+  switch (modes[0]) {
     case 're3': return m.list.includes('RE') && m.grade >= 3;
     case 'lengkap': return !!m.lengkap;
     case 'all3': return m.grade >= 3;
