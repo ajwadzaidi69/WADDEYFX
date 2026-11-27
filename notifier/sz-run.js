@@ -28,6 +28,8 @@ const CFG = {
   entrySrc: env('SZ_ENTRY_SRC', 'ema'),
   minGrade: parseInt(env('SZ_MIN_GRADE', '1'), 10) || 1,
   newsFilter: env('SZ_NEWS_FILTER', 'true') === 'true',
+  lateConfirm: parseInt(env('SZ_LATE', '2'), 10) || 0,
+  reEntry: env('SZ_REENTRY', 'true') === 'true',
   rr: parseFloat(env('SZ_RR', '3')) || 3
 };
 const ALERT_TPSL = env('SZ_ALERT_TPSL', 'true') === 'true';
@@ -149,8 +151,9 @@ async function main() {
     for (const m of fresh) {
       if (m.type === 'buy' || m.type === 'sell') {
         const d = m.type === 'buy' ? 'BUY' : 'SELL';
-        const sup = m.tags.length ? m.tags.join(' · ') : 'EMA sahaja';
-        const stars = m.tags.length >= 2 ? '⭐⭐⭐' : m.tags.length === 1 ? '⭐⭐' : '⭐';
+        const KIND = ['Sah lewat', 'Masuk semula'], kind = m.tags.find(t => KIND.includes(t)), tg = m.tags.filter(t => !KIND.includes(t));
+        const sup = (kind ? kind + ' · ' : '') + (tg.length ? tg.join(' · ') : 'EMA sahaja');
+        const stars = tg.length >= 2 ? '⭐⭐⭐' : tg.length === 1 ? '⭐⭐' : '⭐';
         const st = fresh.find(x => x.k === m.k && x.type === (m.type === 'buy' ? 'bbB' : 'bbS'));
         const stTxt = st ? `\n${st.lengkap ? '⭐ Setup BBMA lengkap' : 'Setup BBMA'}: ${st.list.join(' · ')} ${'⭐'.repeat(st.grade)}` : '';
         await sendAll(subs, { title: `${m.type === 'buy' ? '🟢' : '🔴'} ${d} ${sym} ${tf} ${stars}${st && st.lengkap ? ' + BBMA lengkap' : ''}`,
