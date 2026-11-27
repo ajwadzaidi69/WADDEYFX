@@ -186,7 +186,9 @@ body.fsOn{overflow:hidden}body.fsOn nav.bnav{display:none}
 }
 @media (max-width:1099px){.tabbar .tl{display:none}.tabbar .tl2{display:inline}}
 @media (max-width:560px){.pricebar{grid-template-columns:1fr 1fr}.pricebar .tf3{display:none}.checks{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.tgrid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:700px){.chartcard>.ttl{flex-wrap:wrap;row-gap:6px}#setupF{margin-left:0!important;flex-basis:100%;order:9}}
+
+.airead{display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.5}.airead .ar{display:flex;gap:8px}.airead .ar>b:first-child{flex:0 0 22px}.aibtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.aibtns .jbtn{margin:0}.aiconc{padding:10px;border-radius:10px;background:rgba(212,175,55,.08);border:1px solid rgba(212,175,55,.35)}
+@media(max-width:700px){.chartcard>.ttl{flex-wrap:wrap;row-gap:6px}#setupF,#patF{margin-left:0!important;flex:1 1 45%;order:9}}
 </style>
 </head>
 <body>
@@ -213,7 +215,7 @@ body.fsOn{overflow:hidden}body.fsOn nav.bnav{display:none}
   <!-- HARGA -->
   <div class="card pricebar">
     <div><div class="k">Harga live</div><div id="price" class="price gold">—</div><div id="chg" class="chg mut">—</div></div>
-    <div><div class="k">Candle tutup dalam</div><div id="timer" class="timer">—</div><div id="sess" class="k">—</div><div id="fresh" class="fresh"></div></div>
+    <div><div class="k" id="timerLbl">Candle tutup dalam</div><div id="timer" class="timer">—</div><div id="sess" class="k">—</div><div id="fresh" class="fresh"></div></div>
     <div class="tf3"><div class="k">ATR (purata gerakan)</div><div id="atr" class="timer">—</div><div class="k">setiap candle</div></div>
   </div>
 
@@ -247,7 +249,7 @@ body.fsOn{overflow:hidden}body.fsOn nav.bnav{display:none}
       <div class="tog" id="tog">
         <button data-k="ema" class="on">EMA</button><button data-k="bb" class="on">BB</button><button data-k="ma">MA5/10</button>
         <button data-k="e50" class="on">EMA50</button><button data-k="zone" class="on">Zon</button><button data-k="setup" class="on">Setup</button>
-      </div><select id="setupF" title="Tapis setup BBMA di chart" style="margin-left:6px;padding:4px 6px;font-size:12px"><option value="all">Setup: semua</option><option value="trend">Searah trend</option><option value="g2">★★ ke atas</option><option value="g3">★★★ sahaja</option><option value="len">Lengkap sahaja</option></select>
+      </div><select id="setupF" title="Tapis setup BBMA di chart" style="margin-left:6px;padding:4px 6px;font-size:12px"><option value="all">Setup: semua</option><option value="trend">Searah trend</option><option value="g2">★★ ke atas</option><option value="g3">★★★ sahaja</option><option value="len">Lengkap sahaja</option></select><select id="patF" title="Corak candle & chart" style="margin-left:6px;padding:4px 6px;font-size:12px"><option value="loc">Corak: lokasi baik</option><option value="all">Corak: semua</option><option value="chart">Corak chart sahaja</option><option value="off">Corak: tutup</option></select>
     </div>
     <div class="card" id="chartWrap"><div id="chart"></div><canvas id="ov"></canvas></div>
     <div class="legend">
@@ -265,6 +267,15 @@ body.fsOn{overflow:hidden}body.fsOn nav.bnav{display:none}
       <button data-t="lot"><span class="tl">Kalkulator lot</span><span class="tl2">🧮 Lot</span></button><button data-t="news"><span class="tl">Berita</span><span class="tl2">📰 Berita</span> <span id="newsDot"></span></button><button data-t="opt"><span class="tl">🧪 Uji Strategi</span><span class="tl2">🧪 Uji</span></button><button data-t="set">⚙️ Setting</button>
     </div>
     <div class="tpane" data-p="zb">
+  <!-- BACAAN AI -->
+  <div class="card" id="aiCard"><div class="ttl"><h2>🤖 Bacaan AI</h2><span class="sp"></span><span id="aiBias" class="pill n">—</span></div>
+    <div id="aiRead" class="airead"></div>
+    <div class="aibtns"><button id="aiCopy" class="jbtn">📋 Salin untuk AI</button><button id="aiShot" class="jbtn">📷 Kongsi gambar chart</button><button id="aiOpen" class="jbtn">💬 Buka Claude</button></div>
+    <div id="aiMsg" class="k" style="min-height:16px;margin-top:4px"></div>
+    <details style="margin-top:8px"><summary class="k" style="cursor:pointer">📊 Kadar menang setiap corak candle (data di chart)</summary><div id="patStats" style="overflow-x:auto;margin-top:6px"></div>
+      <div class="help">Ujian: masuk di harga tutup candle corak, SL 1 ATR, TP 1 ATR, dalam 30 candle. 50% = sama macam teka. Corak di "lokasi baik" = BUY di BB bawah / SELL di BB atas.</div></details>
+    <div class="help">Bacaan ini dikira automatik oleh app (percuma). Ia sokongan sahaja, bukan signal entry. Tekan <b>Salin untuk AI</b> kemudian tampal dalam app Claude untuk pendapat lebih mendalam.</div>
+  </div>
   <div class="grid2">
     <!-- ZON -->
     <div class="card"><div class="ttl"><h2>Zon Supply &amp; Demand</h2></div><div id="zones"></div>
@@ -386,7 +397,7 @@ body.fsOn{overflow:hidden}body.fsOn nav.bnav{display:none}
     </div>
   </section>
 
-  <div class="foot">Versi dashboard: <b>v16 · 27 Nov</b><br>Data harga: Deriv (mungkin berbeza sedikit dengan broker MT5). Semua signal dikira selepas candle tutup.<br>Alat bantuan analisis, bukan nasihat kewangan.</div>
+  <div class="foot">Versi dashboard: <b>v17 · 27 Nov</b><br>Data harga: Deriv (mungkin berbeza sedikit dengan broker MT5). Semua signal dikira selepas candle tutup.<br>Alat bantuan analisis, bukan nasihat kewangan.</div>
 </main>
 
 <dialog id="jDlg"><form method="dialog">
@@ -401,6 +412,7 @@ body.fsOn{overflow:hidden}body.fsOn nav.bnav{display:none}
 
 <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 <script src="sz-engine.js"></script>
+<script src="sz-pattern.js"></script>
 <script>
 (function(){
 'use strict';
@@ -415,7 +427,8 @@ const store={get(k,d){try{const v=localStorage.getItem('wsz_'+k);return v==null?
 const METHOD={requireZone:false,requireBBMA:false,requireHTF:false,asiaFilter:false,sessLN:false,roomFilter:false,bbwFilter:false,slStruct:false,beR:0,pullback:true,extFilter:true,rr:1.5};
 const DASH_DEF=Object.assign({},WaddeySZ.DEF,{setupAlert:'off',newsFilter:true},METHOD);
 if(store.get('cfgVer',0)<2){const old=store.get('cfg',{});store.set('cfg',Object.assign({},old,METHOD));store.set('cfgVer',2);}
-let sym=store.get('sym','frxXAUUSD'),tf=store.get('tf','M5'),cfg=Object.assign({},DASH_DEF,store.get('cfg',{})),show=Object.assign({ema:true,bb:true,ma:false,e50:true,zone:true,setup:true,setupF:'all'},store.get('show',{}));
+let sym=store.get('sym','frxXAUUSD'),tf=store.get('tf','M5'),cfg=Object.assign({},DASH_DEF,store.get('cfg',{})),show=Object.assign({ema:true,bb:true,ma:false,e50:true,zone:true,setup:true,setupF:'all',patF:'loc'},store.get('show',{}));
+let PAT={cp:[],ch:[],st:{}};
 let ws=null,ep=0,rid=1,pend=new Map(),tickSub=null,srvOff=0,R=null,bars=[],all=[],busy=false,cur=null,live=null,dayOpen=null;
 if(cfg.setupAlert==null||(cfg.alertBB&&cfg.setupAlert==='off'&&!store.get('saMig',0))){cfg.setupAlert=cfg.alertBB?'all':'off';store.set('saMig',1);}
 if(cfg.newsFilter==null||!store.get('nfMig',0)){cfg.newsFilter=true;store.set('nfMig',1);store.set('cfg',cfg);}
@@ -474,12 +487,20 @@ try{new ResizeObserver(()=>sizeAll()).observe($('chartWrap'));}catch(e){}
 chart.timeScale().subscribeVisibleLogicalRangeChange(()=>drawOv());
 function xOf(t){const ts=chart.timeScale();const x=ts.timeToCoordinate(t);if(x!=null)return x;if(!all.length)return null;
   const lt=all[all.length-1].t,lc=ts.timeToCoordinate(lt);if(lc==null)return null;return lc+(t-lt)/TFS[tf]*ts.options().barSpacing;}
-function drawOv(){const W=ov.clientWidth,H=ov.clientHeight;ctx.clearRect(0,0,W,H);if(!R||!show.zone)return;let psw=62;try{psw=chart.priceScale('right').width()||62;}catch(e){}const pr=W-psw-2;
+function drawOv(){const W=ov.clientWidth,H=ov.clientHeight;ctx.clearRect(0,0,W,H);if(!R)return;let psw=62;try{psw=chart.priceScale('right').width()||62;}catch(e){}const pr=W-psw-2;
+  if((show.patF||'loc')!=='off')drawPats(pr);if(!show.zone)return;
   const z=(o,col,lab)=>{let x1=xOf(o.t);const y1=cs.priceToCoordinate(o.top),y2=cs.priceToCoordinate(o.bot);if(y1==null||y2==null)return;if(x1==null||x1<0)x1=0;if(x1>pr)return;
     const a=Math.max(.12,o.alpha*1.1);ctx.fillStyle=col.replace('A',a.toFixed(2));ctx.fillRect(x1,y1,pr-x1,y2-y1);ctx.strokeStyle=col.replace('A','.9');ctx.lineWidth=1;ctx.strokeRect(x1,y1,pr-x1,y2-y1);
     ctx.font='bold 10px system-ui';const tw=ctx.measureText(lab).width+10;ctx.fillStyle=col.replace('A','1');ctx.fillRect(pr-tw-4,(y1+y2)/2-8,tw,16);ctx.fillStyle='#fff';ctx.fillText(lab,pr-tw+1,(y1+y2)/2+4);};
   R.dem.forEach(o=>z(o,'rgba(10,122,255,A)','DEMAND '+o.rank+' '+o.strength));
   R.sup.forEach(o=>z(o,'rgba(249,115,22,A)','SUPPLY '+o.rank+' '+o.strength));}
+function drawPats(pr){(PAT.ch||[]).forEach(p=>{ctx.save();
+  p.lines.forEach(l=>{const x1=xOf(l.t1),x2=xOf(l.t2),y1=cs.priceToCoordinate(l.p1),y2=cs.priceToCoordinate(l.p2);if(x1==null||x2==null||y1==null||y2==null)return;
+    ctx.strokeStyle=l.col;ctx.lineWidth=2;ctx.setLineDash(l.dash?[6,4]:[]);ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(Math.min(x2,pr),y1+(y2-y1)*((Math.min(x2,pr)-x1)/((x2-x1)||1)));ctx.stroke();});
+  ctx.setLineDash([]);const lx=xOf(p.label.t),ly=cs.priceToCoordinate(p.label.p);
+  if(lx!=null&&ly!=null){ctx.font='bold 11px system-ui';const tw=ctx.measureText(p.label.txt).width+10,x=Math.max(2,Math.min(lx-tw/2,pr-tw-2)),y=ly+(p.d>0?10:-24);
+    ctx.fillStyle=p.d>0?'rgba(34,197,94,.9)':p.d<0?'rgba(239,68,68,.9)':'rgba(148,163,184,.9)';ctx.fillRect(x,y,tw,16);ctx.fillStyle='#fff';ctx.fillText(p.label.txt,x+5,y+12);}
+  ctx.restore();});}
 function setLines(){const S=R.S,T=R.T;const mk=a=>a.map((v,i)=>i>=S+2?{time:T[i],value:v}:null).filter(Boolean);
   const vis={ef:show.ema,es:show.ema,up:show.bb,md:show.bb,lo:show.bb,mhf:show.ma,mhs:show.ma,mlf:show.ma,mls:show.ma,e50:show.e50};
   const src={ef:R.EF,es:R.ES,up:R.UP,md:R.MD,lo:R.LO,mhf:R.MHF,mhs:R.MHS,mlf:R.MLF,mls:R.MLS,e50:R.E50};
@@ -497,6 +518,8 @@ function setMarkers(){const m=[];const from=R.T[Math.max(R.S,R.T.length-400)];
     else if(x.type==='tpn')m.push({time:x.t,position:'aboveBar',color:'#86efac',shape:'circle',text:x.txt});
     else if(show.setup&&x.type==='bbB'&&setupOK(x))m.push({time:x.t,position:'belowBar',color:x.lengkap?'#facc15':'#14b8a6',shape:x.lengkap?'arrowUp':'circle',text:x.txt});
     else if(show.setup&&x.type==='bbS'&&setupOK(x))m.push({time:x.t,position:'aboveBar',color:x.lengkap?'#facc15':'#f472b6',shape:x.lengkap?'arrowDown':'circle',text:x.txt});});
+  const pf=show.patF||'loc';if(pf==='loc'||pf==='all')PAT.cp.forEach(x=>{if(x.t<from||x.d===0)return;if(pf==='loc'&&!x.goodLoc)return;
+    m.push({time:x.t,position:x.d>0?'belowBar':'aboveBar',color:x.d>0?'#a3e635':'#fb923c',shape:x.d>0?'arrowUp':'arrowDown',size:0.6,text:x.short});});
   m.sort((a,b)=>a.time-b.time);cs.setMarkers(m);
   plines.forEach(p=>cs.removePriceLine(p));plines=[];
   if(R.pend&&!R.pos){const q=R.pend;plines.push(cs.createPriceLine({price:q.level,color:'#d4af37',lineWidth:2,lineStyle:1,axisLabelVisible:true,title:(q.dir>0?'Pullback BUY':'Pullback SELL')}));}
@@ -504,7 +527,7 @@ function setMarkers(){const m=[];const from=R.T[Math.max(R.S,R.T.length-400)];
     L2.forEach(([t,v,c,s])=>plines.push(cs.createPriceLine({price:v,color:c,lineWidth:1,lineStyle:s,axisLabelVisible:true,title:t})));}}
 $('tog').onclick=e=>{const b=e.target.closest('button');if(!b)return;const k=b.dataset.k;show[k]=!show[k];b.classList.toggle('on',show[k]);store.set('show',show);if(R){setLines();setMarkers();drawOv();}};
 [...$('tog').children].forEach(b=>b.classList.toggle('on',!!show[b.dataset.k]));
-$('setupF').value=show.setupF||'all';$('setupF').onchange=e=>{show.setupF=e.target.value;store.set('show',show);if(R)setMarkers();};
+$('setupF').value=show.setupF||'all';$('patF').value=show.patF||'loc';$('patF').onchange=e=>{show.patF=e.target.value;store.set('show',show);if(R){setMarkers();drawOv();}};$('setupF').onchange=e=>{show.setupF=e.target.value;store.set('show',show);if(R)setMarkers();};
 
 // ---------- analisis ala trader pro
 function session(){const h=new Date(nowS()*1000).getUTCHours();
@@ -544,6 +567,88 @@ function analyse(){const k=R.C.length-1,c=live??R.C[k],a=R.A[k];
   const ss2=session();if(ss2[2]==='n')warns.push(`Sesi ${ss2[0]}: ${ss2[1].toLowerCase()}. Lebih baik tunggu London / New York.`);
   return{d,big,act,chk,sc,max:chk.length,warns,dem,sup,c,a};}
 
+
+// ---------- Bacaan AI (corak candle + corak chart + konteks)
+const pct=v=>v&&v[1]?Math.round(v[0]/v[1]*100):null;
+function aiData(an){const k=R.C.length-1,c=an.c,a=an.a,out={};
+  const tfs=Object.keys(TFS).filter(x=>x!==tf&&mtfData[x]).map(x=>`${x} ${mtfData[x].trend>0?'▲':'▼'}`);
+  const htf=mtfData[HTF[tf]];
+  out.trend=`${tf}: EMA 5/13 ${R.trend>0?'<b class="bull">naik</b>':'<b class="bear">turun</b>'}, BBMA ${R.bbma>0?'naik':R.bbma<0?'turun':'mendatar'}, harga ${c>R.E50[k]?'atas':'bawah'} EMA50.`+(tfs.length?` TF lain: ${tfs.join(' · ')}.`:'');
+  const bbPos=c>R.UP[k]?'di luar BB atas (terlampau tinggi)':c<R.LO[k]?'di luar BB bawah (terlampau rendah)':c>R.MD[k]?'antara BB tengah dan BB atas':'antara BB tengah dan BB bawah';
+  const zt=(z,nm)=>z.dist===0?`<b>dalam zon ${nm} ${z.rank}</b> (${fx(z.bot)}–${fx(z.top)})`:`${(z.dist/a).toFixed(1)} ATR ${c>z.top?'atas':'bawah'} ${nm} ${z.rank} (${fx(z.bot)}–${fx(z.top)})`;
+  const zs=[];if(an.dem)zs.push(zt(an.dem,'Demand'));if(an.sup)zs.push(zt(an.sup,'Supply'));
+  out.loc=`Harga ${fx(c)} ${bbPos}. ${zs.join('; ')}.`;
+  // corak candle 3 candle terakhir
+  const rc=PAT.cp.filter(x=>x.k>=k-2).reverse();
+  out.cand=rc.map(x=>{const st=PAT.st[x.key],use=x.goodLoc&&st&&st.loc[1]>=8?st.loc:st&&st.all;const w=pct(use);
+    const n=WaddeyPat.NAMES[x.key];return {x,txt:`<b class="${x.d>0?'bull':x.d<0?'bear':''}">${x.name}</b> (${k-x.k===0?'candle terakhir':(k-x.k)+' candle lalu'})${x.goodLoc?' di lokasi baik':''}. ${n.m}`+(w!=null?` <span class="k">Sejarah: menang ${w}% (${use[1]} kali).</span>`:'')};});
+  out.chart=PAT.ch.map(p=>({p,txt:`<b class="${p.d>0?'bull':p.d<0?'bear':''}">${p.name}</b> · ${p.status}. ${p.msg}`}));
+  const pos=R.pos,pend=R.pend,ls=R.marks.filter(x=>x.type==='buy'||x.type==='sell').pop();
+  out.sig=pos?`Trade <b class="${pos.dir>0?'bull':'bear'}">${pos.dir>0?'BUY':'SELL'}</b> sedang berjalan: Entry ${fx(pos.entry)} · SL ${fx(pos.sl)} · TP ${fx(pos.tp)}.`:pend?`${pend.dir>0?'BUY':'SELL'} menunggu pullback di ${fx(pend.level)} (${pend.left} candle lagi).`:ls?`Tiada trade berjalan. Signal terakhir ${ls.type==='buy'?'BUY':'SELL'} ${ago(ls.t)}.`:'Tiada signal dalam data semasa.';
+  // skor bias
+  let sc=0;const why=[];
+  sc+=R.trend;sc+=R.bbma||0;if(htf&&HTF[tf]!==tf){sc+=htf.trend;why.push(`${HTF[tf]} ${htf.trend>0?'naik':'turun'}`);}
+  rc.slice(0,2).forEach(x=>{if(x.d){sc+=x.d*(x.goodLoc?2:1);why.push(x.name);}});
+  PAT.ch.forEach(p=>{if(p.d){sc+=p.d*(p.confirmed?2:1);why.push(p.name+(p.confirmed?' (sah)':''));}});
+  if(an.dem&&an.dem.dist<=a)sc+=1;if(an.sup&&an.sup.dist<=a)sc-=1;
+  out.sc=sc;out.why=why;
+  out.bias=sc>=4?'CONDONG BUY KUAT':sc>=2?'SEDIKIT CONDONG BUY':sc<=-4?'CONDONG SELL KUAT':sc<=-2?'SEDIKIT CONDONG SELL':'NEUTRAL';
+  const sysDir=pos?pos.dir:pend?pend.dir:0;
+  out.conc=(sc>=2?'Lebih banyak bukti harga akan <b class="bull">naik</b>.':sc<=-2?'Lebih banyak bukti harga akan <b class="bear">turun</b>.':'Bukti naik dan turun hampir seimbang: <b>tiada kelebihan jelas</b>.')+
+    (sysDir&&Math.sign(sc)===-sysDir&&Math.abs(sc)>=2?' ⚠️ Bacaan ini <b>berlawanan</b> dengan trade sistem: pertimbang kecilkan lot atau tutup awal.':'')+
+    ' Masuk trade hanya bila signal kaedah #4 keluar searah; corak hanya sokongan.';
+  return out;}
+function renderAI(an){const d=aiData(an);const el=$('aiRead');
+  const row=(i,t)=>`<div class="ar"><b>${i}</b><span>${t}</span></div>`;
+  el.innerHTML=row('📈',d.trend)+row('📍',d.loc)+
+    row('🕯️',d.cand.length?d.cand.map(c=>c.txt).join('<br>'):'Tiada corak candle penting dalam 3 candle terakhir.')+
+    row('📐',d.chart.length?d.chart.map(c=>c.txt).join('<br>'):'Tiada corak chart (Double Top/Bottom, Triangle, Break & Retest) yang jelas sekarang.')+
+    row('🎯',d.sig)+(an.warns.length?row('⚠️',an.warns.join('<br>')):'')+
+    `<div class="aiconc"><b>🧠 Kesimpulan:</b> ${d.conc}${d.why.length?`<div class="k" style="margin-top:4px">Faktor: ${d.why.join(' · ')}</div>`:''}</div>`;
+  const b=$('aiBias');b.textContent=d.bias;b.className='pill '+(d.sc>=2?'b':d.sc<=-2?'s':'n');
+  const st=PAT.st,keys=WaddeyPat.ORDER.filter(x=>st[x]);
+  const cell=v=>v&&v[1]?`<b class="${v[0]/v[1]>=.55?'bull':v[0]/v[1]>=.45?'gold':'bear'}">${Math.round(v[0]/v[1]*100)}%</b> <span class="k">(${v[1]})</span>`:'<span class="k">—</span>';
+  $('patStats').innerHTML=keys.length?`<table style="font-size:12px"><thead><tr><th>Corak</th><th>Semua</th><th>Lokasi baik</th><th>Searah EMA50</th></tr></thead><tbody>${keys.map(x=>`<tr><td><b class="${WaddeyPat.NAMES[x].d>0?'bull':'bear'}">${WaddeyPat.NAMES[x].n}</b></td><td>${cell(st[x].all)}</td><td>${cell(st[x].loc)}</td><td>${cell(st[x].trend)}</td></tr>`).join('')}</tbody></table>`:'<div class="k">Belum cukup data.</div>';}
+const strip=h=>String(h).replace(/<br>/g,'\n').replace(/<[^>]+>/g,'').replace(/&amp;/g,'&');
+function aiText(){const an=analyse(),d=aiData(an),k=R.C.length-1,dz=x=>`${fx(x.bot)}–${fx(x.top)} (${x.strength}${x.dist!=null?'':''})`;
+  const nowMYT=new Date(nowS()*1000).toLocaleString('ms-MY',{timeZone:'Asia/Kuala_Lumpur',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false});
+  const tfl=Object.keys(TFS).map(x=>{const m=x===tf?{trend:R.trend,bbma:R.bbma}:mtfData[x];return m?`${x}: EMA ${m.trend>0?'naik':'turun'}, BBMA ${m.bbma>0?'naik':m.bbma<0?'turun':'mendatar'}`:null;}).filter(Boolean);
+  const cand=[];for(let i=Math.max(R.S,k-29);i<=k;i++)cand.push(`${new Date(R.T[i]*1000).toLocaleString('ms-MY',{timeZone:'Asia/Kuala_Lumpur',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false})}  O ${fx(R.O[i])}  H ${fx(R.H[i])}  L ${fx(R.L[i])}  C ${fx(R.C[i])}`);
+  const cps=PAT.cp.filter(x=>x.k>=k-9).map(x=>`- ${x.name} (${k-x.k} candle lalu${x.goodLoc?', lokasi baik':''})`);
+  const L=[];
+  L.push('Tolong analisis chart ini untuk saya dalam Bahasa Melayu. Data dari dashboard Waddey Signal Zone + BBMA saya.','');
+  L.push(`Simbol: ${symName()} · Timeframe: ${tf} · Masa: ${nowMYT} (waktu Malaysia)`);
+  L.push(`Harga semasa: ${fx(an.c)} · ATR(14): ${fxd(R.A[k])}`);
+  L.push(`EMA5 ${fx(R.EF[k])} · EMA13 ${fx(R.ES[k])} · EMA50 ${fx(R.E50[k])}`);
+  L.push(`Bollinger (20,2): atas ${fx(R.UP[k])} · tengah ${fx(R.MD[k])} · bawah ${fx(R.LO[k])}`);
+  L.push('','Trend setiap timeframe:',...tfl.map(x=>'- '+x));
+  L.push('','Zon Demand (bawah–atas, kekuatan):',...(R.dem.length?R.dem.map(z=>'- '+dz(z)):['- tiada']));
+  L.push('Zon Supply (bawah–atas, kekuatan):',...(R.sup.length?R.sup.map(z=>'- '+dz(z)):['- tiada']));
+  L.push('','Corak candle 10 candle terakhir:',...(cps.length?cps:['- tiada']));
+  L.push('Corak chart:',...(d.chart.length?d.chart.map(c=>'- '+strip(c.txt)):['- tiada']));
+  L.push('','Status sistem: '+strip(d.sig));
+  L.push('Kaedah sistem saya: '+methodParts(cfg).join(' + '));
+  L.push('Bacaan automatik app: '+d.bias+(d.why.length?' ('+d.why.join(', ')+')':''));
+  if(an.warns.length)L.push('Amaran: '+an.warns.map(strip).join(' | '));
+  L.push('',`${cand.length} candle terakhir ${tf} (waktu Malaysia):`,...cand);
+  L.push('','Soalan: Apakah bias pasaran sekarang dan paras penting yang perlu diperhatikan? Adakah ada setup BUY atau SELL yang baik? Jika ada, beri pelan trade (entry, SL, TP) dan risiko yang perlu saya ambil kira. Jika lebih baik tunggu, beritahu apa yang perlu ditunggu.');
+  return L.join('\n');}
+async function copyText(t){try{await navigator.clipboard.writeText(t);return true;}catch(e){}
+  try{const ta=document.createElement('textarea');ta.value=t;ta.setAttribute('readonly','');ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();ta.setSelectionRange(0,t.length);const ok=document.execCommand('copy');ta.remove();return ok;}catch(e){return false;}}
+$('aiCopy').onclick=async()=>{if(!R)return;const t=aiText();const ok=await copyText(t);
+  $('aiMsg').innerHTML=ok?'✅ Disalin. Buka app Claude, tekan lama di kotak mesej dan pilih <b>Tampal / Paste</b>.':'⚠️ Tak dapat salin automatik. Tekan lama pada teks di bawah dan salin.';
+  if(!ok){$('aiMsg').innerHTML+=`<textarea style="width:100%;height:160px;margin-top:6px">${t.replace(/</g,'&lt;')}</textarea>`;}};
+$('aiOpen').onclick=()=>window.open('https://claude.ai/new','_blank');
+async function chartImage(){const sh=chart.takeScreenshot();const c=document.createElement('canvas');c.width=sh.width;c.height=sh.height;const x=c.getContext('2d');
+  x.drawImage(sh,0,0);try{x.drawImage(ov,0,0,ov.width,ov.height,0,0,sh.width,sh.height);}catch(e){}
+  x.fillStyle='rgba(212,175,55,.9)';x.font=`bold ${Math.round(sh.width/40)}px system-ui`;x.fillText(`${symName()} ${tf} · ${fx(live??R.C[R.C.length-1])}`,12,Math.round(sh.width/40)+8);
+  return new Promise(r=>c.toBlob(r,'image/png'));}
+$('aiShot').onclick=async()=>{if(!R)return;try{const blob=await chartImage();const file=new File([blob],`chart-${sym}-${tf}.png`,{type:'image/png'});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:'Chart '+tf});$('aiMsg').textContent='✅ Pilih app Claude untuk hantar gambar.';}
+  else{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=file.name;document.body.appendChild(a);a.click();a.remove();$('aiMsg').textContent='✅ Gambar chart disimpan. Lampirkan dalam app Claude.';}}
+  catch(e){if(e&&e.name!=='AbortError')$('aiMsg').textContent='⚠️ Gagal buat gambar: '+(e.message||e);}};
+
+function computePat(){try{const cp=WaddeyPat.candles(R);PAT={cp,ch:WaddeyPat.chartPats(R),st:WaddeyPat.stats(cp)};}catch(e){console.log(e);PAT={cp:[],ch:[],st:{}};}}
 function render(){const k=R.C.length-1,an=analyse();
   // keputusan
   const vc=$('verdictCard');const col=an.d>0?'var(--bull)':an.d<0?'var(--bear)':'var(--mut)';
@@ -583,7 +688,7 @@ function render(){const k=R.C.length-1,an=analyse();
   const cell=v=>v[1]?`<b class="${v[0]/v[1]>=.55?'bull':v[0]/v[1]>=.45?'gold':'bear'}">${Math.round(v[0]/v[1]*100)}%</b> <span class="k">(${v[1]})</span>`:'<span class="k">—</span>';
   const ord=['LENGKAP','EXT','MHV','CSA','RE','MOM'].filter(n=>agg[n]);
   $('bbStats').innerHTML=ord.length?`<table style="font-size:12px"><thead><tr><th>Setup</th><th>BUY</th><th>SELL</th><th>★★★</th></tr></thead><tbody>${ord.map(n=>`<tr><td><b>${n==='LENGKAP'?'⭐ Lengkap':n}</b></td><td>${cell(agg[n].b)}</td><td>${cell(agg[n].s)}</td><td>${cell(agg[n].g3)}</td></tr>`).join('')}</tbody></table>`:'<div class="k">Belum cukup data.</div>';
-  renderPerf();renderMTF();renderLot();renderNews();renderMethod();if(!$('viewSimple').hidden)renderSimple();}
+  renderPerf();renderMTF();renderLot();renderNews();renderMethod();try{renderAI(an);}catch(e){console.log(e);}if(!$('viewSimple').hidden)renderSimple();}
 
 function pendHtml(){const q=R&&R.pend;if(!q)return'';const d=q.dir,c=live??R.C[R.C.length-1],dist=Math.abs(c-q.level);
   const sec=TFS[tf],ends=q.t+sec*(cfg.pbBars+1);
@@ -957,7 +1062,7 @@ async function refresh(force){if(busy){pendingRefresh=true;return;}busy=true;con
     cs.setData(all.map(b=>({time:b.t,open:b.o,high:b.h,low:b.l,close:b.c})));
     const z=all[all.length-1];cur={time:z.t,open:z.o,high:z.h,low:z.l,close:z.c};
     lastDataAt=Date.now();if(liveHit&&!(R.pos&&liveHit.key===(R.pos.t+'|'+R.pos.entry)))liveHit=null;
-    setLines();setMarkers();render();drawOv();notify();
+    computePat();setLines();setMarkers();render();drawOv();notify();
     const firstLoad=Object.keys(logDB).length===0;const added=logUpsert(R,tf);
     if(!firstLoad&&added>0&&$('viewLog').hidden){unseen+=added;store.set('unseen',unseen);setBadge();}
     if(!$('viewLog').hidden)renderLog();
@@ -971,15 +1076,19 @@ async function refresh(force){if(busy){pendingRefresh=true;return;}busy=true;con
 let lastRender=0;
 function updChg(){if(!dayOpen||live==null)return;const ch=live-dayOpen,pc=ch/dayOpen*100;$('chg').textContent=`${ch>=0?'+':''}${fxd(ch)} (${pc>=0?'+':''}${pc.toFixed(2)}%) hari ini`;$('chg').className='chg '+(ch>=0?'bull':'bear');}
 let lastTickAt=0,tickErr='';
+// pasaran tutup: Deriv beri "Market will open at YYYY-MM-DD HH:MM:SS" (GMT)
+const mktOpenAt=()=>{const m=/open at (\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}(:\d{2})?)/i.exec(tickErr||'');if(!m)return 0;const t=Date.parse(m[1]+'T'+m[2]+(m[3]?'':':00')+'Z')/1000;return isFinite(t)?t:0;};
+const fMYT=t=>new Date(t*1000).toLocaleString('ms-MY',{timeZone:'Asia/Kuala_Lumpur',weekday:'long',hour:'numeric',minute:'2-digit',hour12:true});
 function showStale(){if(live!=null&&Date.now()-lastTickAt<120000)return;const lt=all.length?all[all.length-1].t:0;
-  const msg=tickErr?('⚠️ Tiada harga live: '+tickErr):(lt?'⚠️ Tiada harga live sejak '+ago(lastTickAt?lastTickAt/1000:lt)+'. Pasaran mungkin tutup (cuti / hujung minggu). Harga candle terakhir dipaparkan.':'⚠️ Menunggu harga live…');
+  const op=mktOpenAt();const msg=op&&op>nowS()?('🔒 PASARAN TUTUP · buka semula '+fMYT(op)+' (waktu Malaysia). Harga candle terakhir dipaparkan.'):/closed/i.test(tickErr)?'🔒 PASARAN TUTUP (cuti / hujung minggu). Harga candle terakhir dipaparkan.':tickErr?('⚠️ Tiada harga live: '+tickErr):(lt?'⚠️ Tiada harga live sejak '+ago(lastTickAt?lastTickAt/1000:lt)+'. Pasaran mungkin tutup (cuti / hujung minggu). Harga candle terakhir dipaparkan.':'⚠️ Menunggu harga live…');
   $('chg').textContent=msg;$('chg').className='chg gold';}
 function onTick(ep,p){live=p;lastTickAt=Date.now();lastDataAt=Date.now();checkLiveHit(p);$('price').textContent=fx(p);updChg();
   if(!cur)return;const sec=TFS[tf],bs=bucket(ep,sec);
   if(bs>cur.time){cur={time:bs,open:p,high:p,low:p,close:p};cs.update(cur);setTimeout(()=>refresh(),1500);return;}
   if(bs<cur.time)return;cur.high=Math.max(cur.high,p);cur.low=Math.min(cur.low,p);cur.close=p;cs.update(cur);
   if(R&&Date.now()-lastRender>3000){lastRender=Date.now();renderTrade();renderBars();if(!$('viewSimple').hidden)renderSimple();}}
-setInterval(()=>{if(bars.length&&(live==null||Date.now()-lastTickAt>120000))showStale();const sec=TFS[tf],n=nowS(),left=Math.max(0,Math.ceil(bucket(n,sec)+sec-n));
+setInterval(()=>{if(bars.length&&(live==null||Date.now()-lastTickAt>120000))showStale();const sec=TFS[tf],n=nowS();let left=Math.max(0,Math.ceil(bucket(n,sec)+sec-n));
+  const op=(live==null||Date.now()-lastTickAt>120000)?mktOpenAt():0,closed=op>n;if(closed)left=Math.ceil(op-n);$('timerLbl').textContent=closed?'🔒 Pasaran buka dalam':'Candle tutup dalam';
   const dd=Math.floor(left/86400),h=Math.floor(left%86400/3600),m=Math.floor(left%3600/60),s=left%60;$('timer').textContent=(dd?dd+'h ':'')+(h||dd?h+':':'')+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
   if(!$('viewSimple').hidden)$('sTimer').textContent=$('timer').textContent;
   const ss=session();$('sess').innerHTML=`Sesi <b class="${ss[2]==='b'?'bull':'mut'}">${ss[0]}</b>`;},1000);
