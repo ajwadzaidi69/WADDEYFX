@@ -11,6 +11,8 @@ const DEF = {
   bbLen: 20, bbDev: 2.0, maFast: 5, maSlow: 10, bbEma: 50, reCooldown: 3, requireBBMA: false,
   showExt: true, showMom: true, showCsa: true, showRe: true, showMhv: true,
   entrySrc: 'ema' /*ema | re | csa_ext | ema_re | lengkap*/, minGrade: 1, seqBars: 60, mhvATR: 0.3, nearE50: 3.0, fwdBars: 30,
+  lateConfirm: 0,   // silang EMA pada candle lawan: beri X candle lagi untuk pengesahan (0 = tutup)
+  reEntry: false, reMinBars: 3, reGap: 5,   // masuk semula ikut trend: harga tarik balik sentuh EMA5, tutup searah (atas EMA13 & EMA50)
   newsFilter: false, newsT: null, newsMin: 30,   // tapis berita: tiada trade baru +/- newsMin minit dari berita impak tinggi (newsT = [epoch saat])
   slStruct: false, structBars: 10, structBuf: 0.2, minSLATR: 0.5, maxSLATR: 4.0, // SL ikut struktur (swing / zon)
   beR: 0,
@@ -97,6 +99,7 @@ function compute(bars, cfgIn, startBars) {
   const HT = P.htf && P.htf.length ? P.htf : null; let hi0 = 0;
   const htfDir = tClose => { if (!HT) return 0; while (hi0 + 1 < HT.length && HT[hi0 + 1].t <= tClose) hi0++; return HT[hi0].t <= tClose ? HT[hi0].d : 0; };
   let lastFlags = {}; let pend = null, seqB = null, seqS = null;
+  let crossK = -1e9, crossD = 0, crossUsed = true, lastReEnB = -1e9, lastReEnS = -1e9;
   const NW = P.newsFilter && P.newsT && P.newsT.length ? P.newsT.slice().sort((a, b) => a - b) : null;
   const inNews = t => !!NW && NW.some(n => Math.abs(t - n) <= P.newsMin * 60);
   for (let k = S; k < N; k++) {
@@ -162,8 +165,20 @@ function compute(bars, cfgIn, startBars) {
 
     // ---- signal asas (pencetus entry dipilih melalui entrySrc)
     const bull = EF[k] > ES[k], bear = EF[k] < ES[k], change = bull !== (EF[k - 1] > ES[k - 1]);
-    const emaB = bull && change && (!P.confirm || C[k] > O[k]);
-    const emaS = bear && change && (!P.confirm || C[k] < O[k]);
+    let emaB = bull && change && (!P.confirm || C[k] > O[k]);
+    let emaS = bear && change && (!P.confirm || C[k] < O[k]);
+    if (change) { crossK = k; crossD = bull ? 1 : -1; crossUsed = emaB || emaS; }
+    let kindB = '', kindS = '';
+    // pengesahan lewat: candle silang berlawanan, tunggu candle searah dalam X candle
+    if (P.lateConfirm > 0 && !change && !crossUsed && k - crossK <= P.lateConfirm) {
+      if (crossD > 0 && bull && C[k] > O[k]) { emaB = true; crossUsed = true; kindB = 'Sah lewat'; }
+      if (crossD < 0 && bear && C[k] < O[k]) { emaS = true; crossUsed = true; kindS = 'Sah lewat'; }
+    }
+    // masuk semula ikut trend: harga tarik balik sentuh EMA5 kemudian tutup searah, atas/bawah EMA13 & EMA50 (lulus ujian M15 & H1)
+    if (P.reEntry && !change && k - crossK >= P.reMinBars) {
+      if (bull && !emaB && L[k] <= EF[k] && C[k] > ES[k] && C[k] > O[k] && C[k] > E50[k] && k - lastReEnB > P.reGap) { emaB = true; lastReEnB = k; kindB = 'Masuk semula'; }
+      if (bear && !emaS && H[k] >= EF[k] && C[k] < ES[k] && C[k] < O[k] && C[k] < E50[k] && k - lastReEnS > P.reGap) { emaS = true; lastReEnS = k; kindS = 'Masuk semula'; }
+    }
     let stB = false, stS = false, useEma = false;
     switch (P.entrySrc) {
       case 're': stB = reB; stS = reS; break;
@@ -214,7 +229,7 @@ function compute(bars, cfgIn, startBars) {
       tpLv = []; tpHit = []; for (let i = 1; i <= Math.floor(P.rr) - 1; i++) { tpLv.push(entry + d * posRisk * i); tpHit.push(false); }
       inPos = true; posType = d; posBar = k; opened = { d, tags };
     };
-    const sigTags = d => { const t = []; if (d > 0) { if (zBuy) t.push('Demand ' + lastDemStr); if (BTr[k] === 1) t.push('BBMA naik'); } else { if (zSell) t.push('Supply ' + lastSupStr); if (BTr[k] === -1) t.push('BBMA turun'); } return t; };
+    const sigTags = d => { const t = []; const kd = d > 0 ? kindB : kindS; if (kd) t.push(kd); if (d > 0) { if (zBuy) t.push('Demand ' + lastDemStr); if (BTr[k] === 1) t.push('BBMA naik'); } else { if (zSell) t.push('Supply ' + lastSupStr); if (BTr[k] === -1) t.push('BBMA turun'); } return t; };
 
     // ---- entry pullback: isi order yang menunggu
     if (pend && !(inPos && posType === pend.d)) {
