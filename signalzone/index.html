@@ -250,7 +250,7 @@ body.fsOn{overflow:hidden}body.fsOn nav.bnav{display:none}
       <div class="tog" id="tog">
         <button data-k="ema" class="on">EMA</button><button data-k="bb" class="on">BB</button><button data-k="ma">MA5/10</button>
         <button data-k="e50" class="on">EMA50</button><button data-k="zone" class="on">Zon</button><button data-k="setup" class="on">Setup</button><button data-p="clean" class="pre" title="Pilih cepat: EMA, EMA50, zon dan signal sahaja">✨ Bersih</button><button data-p="all" class="pre" title="Hidupkan semua paparan">☰ Semua</button>
-      </div><select id="setupF" title="Tapis setup BBMA di chart" style="margin-left:6px;padding:4px 6px;font-size:12px"><option value="all">Setup: semua</option><option value="trend">Searah trend</option><option value="g2">★★ ke atas</option><option value="g3">★★★ sahaja</option><option value="len">Lengkap sahaja</option></select><select id="patF" title="Corak candle & chart" style="margin-left:6px;padding:4px 6px;font-size:12px"><option value="zone">Corak: di zon sahaja</option><option value="loc">Corak: lokasi baik</option><option value="all">Corak: semua</option><option value="chart">Corak chart sahaja</option><option value="off">Corak: tutup</option></select>
+      </div><select id="setupF" title="Tapis setup BBMA di chart" style="margin-left:6px;padding:4px 6px;font-size:12px"><option value="all">Setup: semua</option><option value="trend">Searah trend</option><option value="g2">★★ ke atas</option><option value="g3">★★★ sahaja</option><option value="len">Lengkap sahaja</option></select><select id="patF" title="Corak candle & chart" style="margin-left:6px;padding:4px 6px;font-size:12px"><option value="proven">Corak: terbukti sahaja</option><option value="zone">Corak: di zon sahaja</option><option value="loc">Corak: lokasi baik</option><option value="all">Corak: semua</option><option value="chart">Corak chart sahaja</option><option value="off">Corak: tutup</option></select>
     </div>
     <div class="card" id="chartWrap"><div id="chart"></div><canvas id="ov"></canvas></div>
     <div class="legend">
@@ -274,7 +274,7 @@ body.fsOn{overflow:hidden}body.fsOn nav.bnav{display:none}
     <div class="aibtns"><button id="aiCopy" class="jbtn">📋 Salin untuk AI</button><button id="aiShot" class="jbtn">📷 Kongsi gambar chart</button><button id="aiOpen" class="jbtn">💬 Buka Claude</button></div>
     <div id="aiMsg" class="k" style="min-height:16px;margin-top:4px"></div>
     <details style="margin-top:8px"><summary class="k" style="cursor:pointer">📊 Kadar menang setiap corak candle (data di chart)</summary><div id="patStats" style="overflow-x:auto;margin-top:6px"></div>
-      <div class="help">Ujian: masuk di harga tutup candle corak, SL 1 ATR, TP 1 ATR, dalam 30 candle. 50% = sama macam teka. "Di zon" = corak BUY dalam zon Demand / corak SELL dalam zon Supply. "Lokasi baik" = BUY di BB bawah / SELL di BB atas.</div></details>
+      <div class="help">Ujian: masuk di harga tutup candle corak, SL 1 ATR, TP 1 ATR, dalam 30 candle. 50% = sama macam teka. ✓ = terbukti (≥55% dengan ≥20 kali): hanya corak terbukti dipaparkan dengan pilihan "Corak: terbukti sahaja". "Di zon" = corak BUY dalam zon Demand / corak SELL dalam zon Supply. "Lokasi baik" = BUY di BB bawah / SELL di BB atas.</div></details>
     <div class="help">Bacaan ini dikira automatik oleh app (percuma). Ia sokongan sahaja, bukan signal entry. Tekan <b>Salin untuk AI</b> kemudian tampal dalam app Claude untuk pendapat lebih mendalam.</div>
   </div>
   <div class="grid2">
@@ -398,7 +398,7 @@ body.fsOn{overflow:hidden}body.fsOn nav.bnav{display:none}
     </div>
   </section>
 
-  <div class="foot">Versi dashboard: <b>v20 · 27 Nov</b><br>Data harga: Deriv (mungkin berbeza sedikit dengan broker MT5). Semua signal dikira selepas candle tutup.<br>Alat bantuan analisis, bukan nasihat kewangan.</div>
+  <div class="foot">Versi dashboard: <b>v22 · 27 Nov</b><br>Data harga: Deriv (mungkin berbeza sedikit dengan broker MT5). Semua signal dikira selepas candle tutup.<br>Alat bantuan analisis, bukan nasihat kewangan.</div>
 </main>
 
 <dialog id="jDlg"><form method="dialog">
@@ -429,7 +429,8 @@ const METHOD={requireZone:false,requireBBMA:false,requireHTF:false,asiaFilter:fa
 const DASH_DEF=Object.assign({},WaddeySZ.DEF,{setupAlert:'off',newsFilter:true},METHOD);
 if(store.get('cfgVer',0)<2){const old=store.get('cfg',{});store.set('cfg',Object.assign({},old,METHOD));store.set('cfgVer',2);}
 if(!store.get('tfMig',0)){store.set('tfMig',1);if(store.get('tf','M15')==='M5')store.set('tf','M15');}
-let sym=store.get('sym','frxXAUUSD'),tf=store.get('tf','M15'),cfg=Object.assign({},DASH_DEF,store.get('cfg',{})),show=Object.assign({ema:true,bb:true,ma:false,e50:true,zone:true,setup:true,setupF:'all',patF:'loc'},store.get('show',{}));delete show.clean;
+let sym=store.get('sym','frxXAUUSD'),tf=store.get('tf','M15'),cfg=Object.assign({},DASH_DEF,store.get('cfg',{})),show=Object.assign({ema:true,bb:true,ma:false,e50:true,zone:true,setup:true,setupF:'all',patF:'proven'},store.get('show',{}));
+if(!store.get('patMig',0)){store.set('patMig',1);if(show.patF==='loc')show.patF='proven';}delete show.clean;
 let PAT={cp:[],ch:[],st:{}};
 let ws=null,ep=0,rid=1,pend=new Map(),tickSub=null,srvOff=0,R=null,bars=[],all=[],busy=false,cur=null,live=null,dayOpen=null;
 if(cfg.setupAlert==null||(cfg.alertBB&&cfg.setupAlert==='off'&&!store.get('saMig',0))){cfg.setupAlert=cfg.alertBB?'all':'off';store.set('saMig',1);}
@@ -508,21 +509,23 @@ function setLines(){const S=R.S,T=R.T;const mk=a=>a.map((v,i)=>i>=S+2?{time:T[i]
   const vis={ef:show.ema,es:show.ema,up:show.bb,md:show.bb,lo:show.bb,mhf:show.ma,mhs:show.ma,mlf:show.ma,mls:show.ma,e50:show.e50};
   const src={ef:R.EF,es:R.ES,up:R.UP,md:R.MD,lo:R.LO,mhf:R.MHF,mhs:R.MHS,mlf:R.MLF,mls:R.MLS,e50:R.E50};
   for(const k in ln){ln[k].setData(mk(src[k]));ln[k].applyOptions({visible:vis[k]});}}
+const setupLbl=x=>(x.lengkap?'Lengkap ':'')+'★'.repeat(x.grade||1);   // label setup ringkas: bintang sahaja (butiran dalam kad BBMA)
 const setupOK=x=>{const f=show.setupF||'all';return f==='trend'?!!x.tr:f==='g2'?x.grade>=2:f==='g3'?x.grade>=3:f==='len'?!!x.lengkap:true;};
-function setMarkers(){const m=[];const from=R.T[Math.max(R.S,R.T.length-400)];
+function setMarkers(){const m=[];const from=R.T[Math.max(R.S,R.T.length-400)],recent=R.T[Math.max(R.S,R.T.length-100)];
+  const tx=(x,full,short)=>x.t>=recent?full:(short||'');   // label lama (lebih 100 candle) dipendekkan / disorok supaya chart tak sesak
   R.marks.forEach(x=>{if(x.t<from)return;
-    if(x.type==='buy')m.push({time:x.t,position:'belowBar',color:'#22c55e',shape:'arrowUp',text:'BUY'+(x.tags.length?' · '+x.tags.join(' · '):'')});
-    else if(x.type==='sell')m.push({time:x.t,position:'aboveBar',color:'#ef4444',shape:'arrowDown',text:'SELL'+(x.tags.length?' · '+x.tags.join(' · '):'')});
+    if(x.type==='buy')m.push({time:x.t,position:'belowBar',color:'#22c55e',shape:'arrowUp',text:tx(x,'BUY'+(x.tags.length?' · '+x.tags.join(' · '):''),'BUY')});
+    else if(x.type==='sell')m.push({time:x.t,position:'aboveBar',color:'#ef4444',shape:'arrowDown',text:tx(x,'SELL'+(x.tags.length?' · '+x.tags.join(' · '):''),'SELL')});
     else if(x.type==='tp')m.push({time:x.t,position:'aboveBar',color:'#22c55e',shape:'circle',text:'TP'});
     else if(x.type==='sl')m.push({time:x.t,position:'belowBar',color:'#ef4444',shape:'circle',text:'SL'});
     else if(x.type==='be')m.push({time:x.t,position:'aboveBar',color:'#94a3b8',shape:'circle',text:'BE'});
     else if(x.type==='inv')m.push({time:x.t,position:'aboveBar',color:'#facc15',shape:'square',text:x.txt});
-    else if(x.type==='nblk')m.push({time:x.t,position:'aboveBar',color:'#94a3b8',shape:'square',text:'✕ Berita'});
-    else if(x.type==='tpn')m.push({time:x.t,position:'aboveBar',color:'#86efac',shape:'circle',text:x.txt});
-    else if(show.setup&&x.type==='bbB'&&setupOK(x))m.push({time:x.t,position:'belowBar',color:x.lengkap?'#facc15':'#14b8a6',shape:x.lengkap?'arrowUp':'circle',text:x.txt});
-    else if(show.setup&&x.type==='bbS'&&setupOK(x))m.push({time:x.t,position:'aboveBar',color:x.lengkap?'#facc15':'#f472b6',shape:x.lengkap?'arrowDown':'circle',text:x.txt});});
-  const pf=show.patF||'loc';if(pf==='loc'||pf==='all'||pf==='zone')PAT.cp.forEach(x=>{if(x.t<from||x.d===0)return;if(pf==='loc'&&!x.goodLoc)return;if(pf==='zone'&&!x.inZone)return;
-    m.push({time:x.t,position:x.d>0?'belowBar':'aboveBar',color:x.d>0?'#a3e635':'#fb923c',shape:x.d>0?'arrowUp':'arrowDown',size:0.6,text:x.short});});
+    else if(x.type==='nblk')m.push({time:x.t,position:'aboveBar',color:'#94a3b8',shape:'square',text:tx(x,'✕ Berita')});
+    else if(x.type==='tpn')m.push({time:x.t,position:'aboveBar',color:'#86efac',shape:'circle',text:tx(x,x.txt)});
+    else if(show.setup&&x.type==='bbB'&&setupOK(x))m.push({time:x.t,position:'belowBar',color:x.lengkap?'#facc15':'#14b8a6',shape:x.lengkap?'arrowUp':'circle',text:tx(x,setupLbl(x))});
+    else if(show.setup&&x.type==='bbS'&&setupOK(x))m.push({time:x.t,position:'aboveBar',color:x.lengkap?'#facc15':'#f472b6',shape:x.lengkap?'arrowDown':'circle',text:tx(x,setupLbl(x))});});
+  const pf=show.patF||'proven';if(['loc','all','zone','proven'].includes(pf))PAT.cp.forEach(x=>{if(x.t<from||x.d===0)return;if(pf==='loc'&&!x.goodLoc)return;if(pf==='zone'&&!x.inZone)return;if(pf==='proven'&&!proven(x))return;
+    m.push({time:x.t,position:x.d>0?'belowBar':'aboveBar',color:x.d>0?'#a3e635':'#fb923c',shape:x.d>0?'arrowUp':'arrowDown',size:0.6,text:tx(x,x.short)});});
   m.sort((a,b)=>a.time-b.time);cs.setMarkers(m);
   plines.forEach(p=>cs.removePriceLine(p));plines=[];
   if(R.pend&&!R.pos){const q=R.pend;plines.push(cs.createPriceLine({price:q.level,color:'#d4af37',lineWidth:2,lineStyle:1,axisLabelVisible:true,title:(q.dir>0?'Pullback BUY':'Pullback SELL')}));}
@@ -615,22 +618,27 @@ function aiData(an){const k=R.C.length-1,c=an.c,a=an.a,out={};
   out.loc=`Harga ${fx(c)} ${bbPos}. ${zs.join('; ')}.`;
   // corak candle 3 candle terakhir
   const rc=PAT.cp.filter(x=>x.k>=k-2).reverse();
-  out.cand=rc.map(x=>{const st=PAT.st[x.key],use=x.goodLoc&&st&&st.loc[1]>=8?st.loc:st&&st.all;const w=pct(use);
-    const n=WaddeyPat.NAMES[x.key];return {x,txt:`<b class="${x.d>0?'bull':x.d<0?'bear':''}">${x.name}</b> (${k-x.k===0?'candle terakhir':(k-x.k)+' candle lalu'})${x.inZone?(x.d>0?' <b>di zon Demand</b>':' <b>di zon Supply</b>'):x.goodLoc?' di lokasi baik':''}. ${n.m}`+(w!=null?` <span class="k">Sejarah: menang ${w}% (${use[1]} kali).</span>`:'')};});
+  out.cand=rc.map(x=>{const st=PAT.st[x.key],ps=provenStat(x),use=ps||(x.inZone&&st&&st.zone[1]>=8?st.zone:x.goodLoc&&st&&st.loc[1]>=8?st.loc:st&&st.all);const w=pct(use);
+    const n=WaddeyPat.NAMES[x.key];return {x,txt:`<b class="${x.d>0?'bull':x.d<0?'bear':''}">${x.name}</b> (${k-x.k===0?'candle terakhir':(k-x.k)+' candle lalu'})${x.inZone?(x.d>0?' <b>di zon Demand</b>':' <b>di zon Supply</b>'):x.goodLoc?' di lokasi baik':''}. ${n.m}`+(w!=null?` <span class="k">Sejarah: menang ${w}% (${use[1]} kali).</span>`:'')+(x.d===0?'':proven(x)?' <b class="bull">✓ Terbukti</b>':' <span class="k">· tak terbukti, tidak dikira dalam kesimpulan</span>')};});
   out.chart=PAT.ch.map(p=>({p,txt:`<b class="${p.d>0?'bull':p.d<0?'bear':''}">${p.name}</b> · ${p.status}. ${p.msg}`}));
   const pos=R.pos,pend=R.pend,ls=R.marks.filter(x=>x.type==='buy'||x.type==='sell').pop();
   out.sig=pos?`Trade <b class="${pos.dir>0?'bull':'bear'}">${pos.dir>0?'BUY':'SELL'}</b> sedang berjalan: Entry ${fx(pos.entry)} · SL ${fx(pos.sl)} · TP ${fx(pos.tp)}.`:pend?`${pend.dir>0?'BUY':'SELL'} menunggu pullback di ${fx(pend.level)} (${pend.left} candle lagi).`:ls?`Tiada trade berjalan. Signal terakhir ${ls.type==='buy'?'BUY':'SELL'} ${ago(ls.t)}.`:'Tiada signal dalam data semasa.';
   // skor bias
   let sc=0;const why=[];
   sc+=R.trend;sc+=R.bbma||0;if(htf&&HTF[tf]!==tf){sc+=htf.trend;why.push(`${HTF[tf]} ${htf.trend>0?'naik':'turun'}`);}
-  rc.slice(0,2).forEach(x=>{if(x.d){sc+=x.d*(x.goodLoc?2:1);why.push(x.name);}});
-  PAT.ch.forEach(p=>{if(p.d){sc+=p.d*(p.confirmed?2:1);why.push(p.name+(p.confirmed?' (sah)':''));}});
+  rc.slice(0,2).forEach(x=>{if(x.d&&proven(x)){sc+=x.d*(x.goodLoc||x.inZone?2:1);why.push(x.name);}});
+  PAT.ch.forEach(p=>{if(p.d&&!p.done){sc+=p.d*(p.confirmed?2:1);why.push(p.name+(p.confirmed?' (sah)':''));}});
   if(an.dem&&an.dem.dist<=a)sc+=1;if(an.sup&&an.sup.dist<=a)sc-=1;
   out.sc=sc;out.why=why;
   out.bias=sc>=4?'CONDONG BUY KUAT':sc>=2?'SEDIKIT CONDONG BUY':sc<=-4?'CONDONG SELL KUAT':sc<=-2?'SEDIKIT CONDONG SELL':'NEUTRAL';
+  // terlampau jauh: harga di luar BB, jauh dari EMA50 atau terlalu dekat zon lawan
+  const dirB=Math.sign(sc),distE=Math.abs(c-R.E50[k])/a,opp=dirB>0?an.sup:an.dem;
+  const ext=Math.abs(sc)>=2&&((dirB>0&&c>R.UP[k])||(dirB<0&&c<R.LO[k])||distE>(+cfg.extEmaATR||3)||(opp&&opp.dist<=0.5*a));
+  out.ext=ext;if(ext)out.bias+=' · JANGAN KEJAR';
   const sysDir=pos?pos.dir:pend?pend.dir:0;
   out.conc=(sc>=2?'Lebih banyak bukti harga akan <b class="bull">naik</b>.':sc<=-2?'Lebih banyak bukti harga akan <b class="bear">turun</b>.':'Bukti naik dan turun hampir seimbang: <b>tiada kelebihan jelas</b>.')+
     (sysDir&&Math.sign(sc)===-sysDir&&Math.abs(sc)>=2?' ⚠️ Bacaan ini <b>berlawanan</b> dengan trade sistem: pertimbang kecilkan lot atau tutup awal.':'')+
+    (ext?` ⚠️ <b>Tapi jangan kejar:</b> harga dah ${distE>(+cfg.extEmaATR||3)?'terlalu jauh dari EMA50 ('+distE.toFixed(1)+' ATR)':(dirB>0&&c>R.UP[k])?'di luar BB atas':(dirB<0&&c<R.LO[k])?'di luar BB bawah':'terlalu dekat zon '+(dirB>0?'Supply':'Demand')}. Tunggu harga tarik balik dulu.`:'')+
     ' Masuk trade hanya bila signal kaedah #4 keluar searah; corak hanya sokongan.';
   return out;}
 function renderAI(an){const d=aiData(an);const el=$('aiRead');
@@ -642,7 +650,7 @@ function renderAI(an){const d=aiData(an);const el=$('aiRead');
     `<div class="aiconc"><b>🧠 Kesimpulan:</b> ${d.conc}${d.why.length?`<div class="k" style="margin-top:4px">Faktor: ${d.why.join(' · ')}</div>`:''}</div>`;
   const b=$('aiBias');b.textContent=d.bias;b.className='pill '+(d.sc>=2?'b':d.sc<=-2?'s':'n');
   const st=PAT.st,keys=WaddeyPat.ORDER.filter(x=>st[x]);
-  const cell=v=>v&&v[1]?`<b class="${v[0]/v[1]>=.55?'bull':v[0]/v[1]>=.45?'gold':'bear'}">${Math.round(v[0]/v[1]*100)}%</b> <span class="k">(${v[1]})</span>`:'<span class="k">—</span>';
+  const cell=v=>v&&v[1]?`<b class="${v[0]/v[1]>=.55?'bull':v[0]/v[1]>=.45?'gold':'bear'}">${Math.round(v[0]/v[1]*100)}%</b> <span class="k">(${v[1]})</span>${v[1]>=PROVEN_N&&v[0]/v[1]>=PROVEN_WR?' ✓':''}`:'<span class="k">—</span>';
   $('patStats').innerHTML=keys.length?`<table style="font-size:12px"><thead><tr><th>Corak</th><th>Semua</th><th>Di zon</th><th>Lokasi baik</th><th>Searah EMA50</th></tr></thead><tbody>${keys.map(x=>`<tr><td><b class="${WaddeyPat.NAMES[x].d>0?'bull':'bear'}">${WaddeyPat.NAMES[x].n}</b></td><td>${cell(st[x].all)}</td><td>${cell(st[x].zone)}</td><td>${cell(st[x].loc)}</td><td>${cell(st[x].trend)}</td></tr>`).join('')}</tbody></table>`:'<div class="k">Belum cukup data.</div>';}
 const strip=h=>String(h).replace(/<br>/g,'\n').replace(/<[^>]+>/g,'').replace(/&amp;/g,'&');
 function aiText(){const an=analyse(),d=aiData(an),k=R.C.length-1,dz=x=>`${fx(x.bot)}–${fx(x.top)} (${x.strength}${x.dist!=null?'':''})`;
@@ -683,6 +691,11 @@ $('aiShot').onclick=async()=>{if(!R)return;try{const blob=await chartImage();con
   else{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=file.name;document.body.appendChild(a);a.click();a.remove();$('aiMsg').textContent='✅ Gambar chart disimpan. Lampirkan dalam app Claude.';}}
   catch(e){if(e&&e.name!=='AbortError')$('aiMsg').textContent='⚠️ Gagal buat gambar: '+(e.message||e);}};
 
+// corak 'terbukti': kadar menang >= 55% dengan >= 20 sampel pada data emas sebenar (TF ini), ikut konteks corak itu
+const PROVEN_WR=.55,PROVEN_N=20;
+function provenStat(x){const s=PAT.st[x.key];if(!s)return null;const ok=v=>v&&v[1]>=PROVEN_N&&v[0]/v[1]>=PROVEN_WR;
+  if(x.inZone&&ok(s.zone))return s.zone;if(x.goodLoc&&ok(s.loc))return s.loc;if(x.withTrend&&ok(s.trend))return s.trend;if(ok(s.all))return s.all;return null;}
+const proven=x=>x.d!==0&&!!provenStat(x);
 function computePat(){try{const cp=WaddeyPat.candles(R);PAT={cp,ch:WaddeyPat.chartPats(R),st:WaddeyPat.stats(cp)};}catch(e){console.log(e);PAT={cp:[],ch:[],st:{}};}}
 function render(){const k=R.C.length-1,an=analyse();
   // keputusan
@@ -1003,8 +1016,7 @@ function renderLot(){const cent=lot.acc==='cent',cur=cent?'USC':'$';$('lBalLab')
 let news=[],newsUpd=0,newsKey='';
 const newsTimes=()=>news.filter(e=>e.impact==='High'&&e.country==='USD').map(e=>e.t);
 async function loadNews(){try{let ok=false;
-    try{const r=await fetch('https://nfs.faireconomy.media/ff_calendar_thisweek.json',{cache:'no-store'});if(r.ok){const j=await r.json();
-      news=j.filter(e=>e.country==='USD'&&(e.impact==='High'||e.impact==='Medium')).map(e=>({t:Math.floor(new Date(e.date).getTime()/1000),title:e.title,country:e.country,impact:e.impact,forecast:e.forecast||'',previous:e.previous||''}));newsUpd=Date.now()/1000;ok=true;}}catch(e){}
+    // ForexFactory sekat browser (CORS), jadi guna news.json yang dikemas kini oleh GitHub setiap 3 jam
     if(!ok){const r=await fetch('news.json?'+Date.now(),{cache:'no-store'});const j=await r.json();news=j.events||[];newsUpd=j.updated||0;}
     store.set('news',{news,newsUpd});}catch(e){const c=store.get('news',null);if(c){news=c.news;newsUpd=c.newsUpd;}}
   const nk=newsTimes().join(',');if(nk!==newsKey){newsKey=nk;if(cfg.newsFilter&&R)refresh();}

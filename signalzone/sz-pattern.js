@@ -115,15 +115,18 @@ function chartPats(R, opt) {
     if (kb >= 0 && k - kb > 30) return;
     const target = top ? neck - depth : neck + depth;
     const ok = kb >= 0;
+    // sasaran dah dicapai?
+    const kt = ok ? firstClose(kb, j => top ? L[j] <= target : H[j] >= target) : -1, done = kt >= 0;
+    if (done && k - kt > 10) return;
     out.push({
       type: top ? 'DT' : 'DB', name: top ? 'Double Top' : 'Double Bottom', d: top ? -1 : 1,
-      status: ok ? 'disahkan (pecah neckline)' : 'sedang terbentuk',
+      status: done ? 'sasaran dah dicapai' : ok ? 'disahkan (pecah neckline)' : 'sedang terbentuk', done,
       msg: (top ? 'Double Top: dua puncak hampir sama tinggi di ' : 'Double Bottom: dua lantai hampir sama rendah di ') + 'sekitar ' + ext.toFixed(2) + '. Neckline ' + neck.toFixed(2) + '. ' +
-        (ok ? (top ? 'Neckline dah pecah ke bawah: tanda turun, sasaran sekitar ' : 'Neckline dah pecah ke atas: tanda naik, sasaran sekitar ') + target.toFixed(2) + '.'
+        (done ? 'Sasaran ' + target.toFixed(2) + ' dah dicapai: corak ini dah selesai, jangan guna untuk entry baru.' : ok ? (top ? 'Neckline dah pecah ke bawah: tanda turun, sasaran sekitar ' : 'Neckline dah pecah ke atas: tanda naik, sasaran sekitar ') + target.toFixed(2) + '.'
             : (top ? 'Belum sah. Jadi tanda SELL bila candle tutup bawah neckline.' : 'Belum sah. Jadi tanda BUY bila candle tutup atas neckline.')),
       level: neck, target, confirmed: ok,
       lines: [line(p1.k, p1.v, p2.k, p2.v, top ? '#f97316' : '#3b82f6'), line(Math.min(p1.k, nk), neck, k, neck, '#facc15', true)],
-      label: { t: T[p2.k], p: p2.v, txt: (top ? 'Double Top' : 'Double Bottom') + (ok ? ' ✓' : '') }
+      label: { t: T[p2.k], p: p2.v, txt: (top ? 'Double Top' : 'Double Bottom') + (done ? ' (selesai)' : ok ? ' ✓' : '') }
     });
   };
   dbl(ph, true); dbl(pl, false);
