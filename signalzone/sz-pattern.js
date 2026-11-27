@@ -3,16 +3,16 @@
 (function (g) {
 'use strict';
 const P = {
-  MSTAR: { n: 'Morning Star', s: '★M', d: 1, m: '3 candle: jatuh kuat, ragu-ragu, kemudian naik kuat. Tanda pusingan naik.' },
-  ESTAR: { n: 'Evening Star', s: '★E', d: -1, m: '3 candle: naik kuat, ragu-ragu, kemudian jatuh kuat. Tanda pusingan turun.' },
-  BENG: { n: 'Bullish Engulfing', s: 'ENG▲', d: 1, m: 'Candle hijau menelan candle merah sebelumnya. Pembeli ambil alih.' },
-  SENG: { n: 'Bearish Engulfing', s: 'ENG▼', d: -1, m: 'Candle merah menelan candle hijau sebelumnya. Penjual ambil alih.' },
-  HAM: { n: 'Hammer / Pin Bar BUY', s: 'PIN▲', d: 1, m: 'Ekor bawah panjang: harga rendah ditolak, pembeli masuk.' },
-  SHO: { n: 'Shooting Star / Pin Bar SELL', s: 'PIN▼', d: -1, m: 'Ekor atas panjang: harga tinggi ditolak, penjual masuk.' },
-  TWB: { n: 'Tweezer Bottom', s: 'TWZ▲', d: 1, m: '2 candle dengan low yang sama: lantai harga dipertahankan.' },
-  TWT: { n: 'Tweezer Top', s: 'TWZ▼', d: -1, m: '2 candle dengan high yang sama: siling harga dipertahankan.' },
-  MBU: { n: 'Marubozu Bullish', s: 'MARU▲', d: 1, m: 'Candle hijau besar tanpa ekor: pembeli kawal sepenuhnya.' },
-  MBE: { n: 'Marubozu Bearish', s: 'MARU▼', d: -1, m: 'Candle merah besar tanpa ekor: penjual kawal sepenuhnya.' },
+  MSTAR: { n: 'Morning Star', s: 'Tukar▲', d: 1, m: '3 candle: jatuh kuat, ragu-ragu, kemudian naik kuat. Tanda pusingan naik.' },
+  ESTAR: { n: 'Evening Star', s: 'Tukar▼', d: -1, m: '3 candle: naik kuat, ragu-ragu, kemudian jatuh kuat. Tanda pusingan turun.' },
+  BENG: { n: 'Bullish Engulfing', s: 'Tukar▲', d: 1, m: 'Candle hijau menelan candle merah sebelumnya. Pembeli ambil alih.' },
+  SENG: { n: 'Bearish Engulfing', s: 'Tukar▼', d: -1, m: 'Candle merah menelan candle hijau sebelumnya. Penjual ambil alih.' },
+  HAM: { n: 'Hammer / Pin Bar BUY', s: 'Tukar▲', d: 1, m: 'Ekor bawah panjang: harga rendah ditolak, pembeli masuk.' },
+  SHO: { n: 'Shooting Star / Pin Bar SELL', s: 'Tukar▼', d: -1, m: 'Ekor atas panjang: harga tinggi ditolak, penjual masuk.' },
+  TWB: { n: 'Tweezer Bottom', s: 'Tukar▲', d: 1, m: '2 candle dengan low yang sama: lantai harga dipertahankan.' },
+  TWT: { n: 'Tweezer Top', s: 'Tukar▼', d: -1, m: '2 candle dengan high yang sama: siling harga dipertahankan.' },
+  MBU: { n: 'Marubozu Bullish', s: 'Kuat▲', d: 1, m: 'Candle hijau besar tanpa ekor: pembeli kawal sepenuhnya.' },
+  MBE: { n: 'Marubozu Bearish', s: 'Kuat▼', d: -1, m: 'Candle merah besar tanpa ekor: penjual kawal sepenuhnya.' },
   IB: { n: 'Inside Bar', s: 'IB', d: 0, m: 'Candle di dalam julat candle sebelumnya: pasaran berehat, tunggu pecah keluar.' },
   DOJI: { n: 'Doji', s: 'DOJI', d: 0, m: 'Buka = tutup: pembeli dan penjual seimbang, pasaran ragu-ragu.' }
 };
@@ -47,6 +47,8 @@ function candles(R, opt) {
     const atHigh = H[k] >= UP[k] - 0.15 * a || H[k - 1] >= UP[k - 1] - 0.15 * a;
     const goodLoc = d > 0 ? atLow : d < 0 ? atHigh : false;
     const withTrend = d > 0 ? C[k] > E50[k] : d < 0 ? C[k] < E50[k] : false;
+    const ZD = R.ZDT || [], ZS = R.ZST || [];
+    const inZone = d > 0 ? !!(ZD[k] || ZD[k - 1]) : d < 0 ? !!(ZS[k] || ZS[k - 1]) : false;   // BUY di Demand / SELL di Supply
     // keputusan ke depan (statistik sahaja): entry tutup candle, SL 1 ATR, TP 1 ATR
     let res = null;
     if (d !== 0) {
@@ -57,7 +59,7 @@ function candles(R, opt) {
       }
       if (res === null && k + fw < N) res = 0;
     }
-    out.push({ k, t: T[k], key, list: f, d, name: P[key].n, short: P[key].s, res, goodLoc, withTrend });
+    out.push({ k, t: T[k], key, list: f, d, name: P[key].n, short: P[key].s, res, goodLoc, withTrend, inZone });
   }
   return out;
 }
@@ -67,7 +69,8 @@ function stats(list) {
   const s = {};
   list.forEach(x => {
     if (x.d === 0 || x.res == null || x.res === 0) return;
-    const o = s[x.key] = s[x.key] || { all: [0, 0], loc: [0, 0], trend: [0, 0] };
+    const o = s[x.key] = s[x.key] || { all: [0, 0], loc: [0, 0], trend: [0, 0], zone: [0, 0] };
+    if (x.inZone) { o.zone[1]++; if (x.res === 1) o.zone[0]++; }
     o.all[1]++; if (x.res === 1) o.all[0]++;
     if (x.goodLoc) { o.loc[1]++; if (x.res === 1) o.loc[0]++; }
     if (x.withTrend) { o.trend[1]++; if (x.res === 1) o.trend[0]++; }

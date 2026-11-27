@@ -187,6 +187,7 @@ body.fsOn{overflow:hidden}body.fsOn nav.bnav{display:none}
 @media (max-width:1099px){.tabbar .tl{display:none}.tabbar .tl2{display:inline}}
 @media (max-width:560px){.pricebar{grid-template-columns:1fr 1fr}.pricebar .tf3{display:none}.checks{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.tgrid{grid-template-columns:repeat(2,1fr)}}
 
+.tog .pre{border-style:dashed}
 .airead{display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.5}.airead .ar{display:flex;gap:8px}.airead .ar>b:first-child{flex:0 0 22px}.aibtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.aibtns .jbtn{margin:0}.aiconc{padding:10px;border-radius:10px;background:rgba(212,175,55,.08);border:1px solid rgba(212,175,55,.35)}
 @media(max-width:700px){.chartcard>.ttl{flex-wrap:wrap;row-gap:6px}#setupF,#patF{margin-left:0!important;flex:1 1 45%;order:9}}
 </style>
@@ -226,7 +227,7 @@ body.fsOn{overflow:hidden}body.fsOn nav.bnav{display:none}
     <div class="vhead">
       <div><div id="vBig" class="vbig">—</div><div id="vMeter" class="meter"><i></i><i></i><i></i><i></i><i></i></div></div>
       <span class="sp"></span>
-      <div style="text-align:right"><div class="k">Pengesahan</div><div id="vScore" class="v" style="font-size:20px">—</div></div>
+      <div style="text-align:right"><div class="k">Syarat OK</div><div id="vScore" class="v" style="font-size:20px">—</div></div>
     </div>
     <div id="vAction" class="action"></div>
     <div id="vChips" class="vchips"></div>
@@ -248,15 +249,15 @@ body.fsOn{overflow:hidden}body.fsOn nav.bnav{display:none}
     <div class="ttl" style="margin-bottom:8px"><h2>Chart</h2><button id="fsBtn" class="jbtn" style="margin:0 0 0 8px">⛶ Penuh</button><span class="sp"></span>
       <div class="tog" id="tog">
         <button data-k="ema" class="on">EMA</button><button data-k="bb" class="on">BB</button><button data-k="ma">MA5/10</button>
-        <button data-k="e50" class="on">EMA50</button><button data-k="zone" class="on">Zon</button><button data-k="setup" class="on">Setup</button>
-      </div><select id="setupF" title="Tapis setup BBMA di chart" style="margin-left:6px;padding:4px 6px;font-size:12px"><option value="all">Setup: semua</option><option value="trend">Searah trend</option><option value="g2">★★ ke atas</option><option value="g3">★★★ sahaja</option><option value="len">Lengkap sahaja</option></select><select id="patF" title="Corak candle & chart" style="margin-left:6px;padding:4px 6px;font-size:12px"><option value="loc">Corak: lokasi baik</option><option value="all">Corak: semua</option><option value="chart">Corak chart sahaja</option><option value="off">Corak: tutup</option></select>
+        <button data-k="e50" class="on">EMA50</button><button data-k="zone" class="on">Zon</button><button data-k="setup" class="on">Setup</button><button data-p="clean" class="pre" title="Pilih cepat: EMA, EMA50, zon dan signal sahaja">✨ Bersih</button><button data-p="all" class="pre" title="Hidupkan semua paparan">☰ Semua</button>
+      </div><select id="setupF" title="Tapis setup BBMA di chart" style="margin-left:6px;padding:4px 6px;font-size:12px"><option value="all">Setup: semua</option><option value="trend">Searah trend</option><option value="g2">★★ ke atas</option><option value="g3">★★★ sahaja</option><option value="len">Lengkap sahaja</option></select><select id="patF" title="Corak candle & chart" style="margin-left:6px;padding:4px 6px;font-size:12px"><option value="zone">Corak: di zon sahaja</option><option value="loc">Corak: lokasi baik</option><option value="all">Corak: semua</option><option value="chart">Corak chart sahaja</option><option value="off">Corak: tutup</option></select>
     </div>
     <div class="card" id="chartWrap"><div id="chart"></div><canvas id="ov"></canvas></div>
     <div class="legend">
       <span><i class="sw" style="background:#22c55e"></i>EMA 5</span><span><i class="sw" style="background:#f59e0b"></i>EMA 13</span>
       <span><i class="sw" style="background:#3b82f6"></i>Bollinger Band</span><span><i class="sw" style="background:#a855f7"></i>EMA 50</span>
       <span><i class="sw" style="background:#ef4444"></i>MA5/10 High</span><span><i class="sw" style="background:#14b8a6"></i>MA5/10 Low</span>
-      <span><i class="sw" style="background:#0a7aff;height:9px"></i>Demand</span><span><i class="sw" style="background:#f97316;height:9px"></i>Supply</span>
+      <span><i class="sw" style="background:#0a7aff;height:9px"></i>Demand</span><span><i class="sw" style="background:#f97316;height:9px"></i>Supply</span><span><b style="color:#a3e635">Tukar▲</b>/<b style="color:#fb923c">Tukar▼</b> corak candle: harga mungkin bertukar arah naik / turun</span><span><b style="color:#a3e635">Kuat▲</b>/<b style="color:#fb923c">Kuat▼</b> candle besar searah</span>
     </div>
   </div>
 
@@ -273,7 +274,7 @@ body.fsOn{overflow:hidden}body.fsOn nav.bnav{display:none}
     <div class="aibtns"><button id="aiCopy" class="jbtn">📋 Salin untuk AI</button><button id="aiShot" class="jbtn">📷 Kongsi gambar chart</button><button id="aiOpen" class="jbtn">💬 Buka Claude</button></div>
     <div id="aiMsg" class="k" style="min-height:16px;margin-top:4px"></div>
     <details style="margin-top:8px"><summary class="k" style="cursor:pointer">📊 Kadar menang setiap corak candle (data di chart)</summary><div id="patStats" style="overflow-x:auto;margin-top:6px"></div>
-      <div class="help">Ujian: masuk di harga tutup candle corak, SL 1 ATR, TP 1 ATR, dalam 30 candle. 50% = sama macam teka. Corak di "lokasi baik" = BUY di BB bawah / SELL di BB atas.</div></details>
+      <div class="help">Ujian: masuk di harga tutup candle corak, SL 1 ATR, TP 1 ATR, dalam 30 candle. 50% = sama macam teka. "Di zon" = corak BUY dalam zon Demand / corak SELL dalam zon Supply. "Lokasi baik" = BUY di BB bawah / SELL di BB atas.</div></details>
     <div class="help">Bacaan ini dikira automatik oleh app (percuma). Ia sokongan sahaja, bukan signal entry. Tekan <b>Salin untuk AI</b> kemudian tampal dalam app Claude untuk pendapat lebih mendalam.</div>
   </div>
   <div class="grid2">
@@ -397,7 +398,7 @@ body.fsOn{overflow:hidden}body.fsOn nav.bnav{display:none}
     </div>
   </section>
 
-  <div class="foot">Versi dashboard: <b>v17 · 27 Nov</b><br>Data harga: Deriv (mungkin berbeza sedikit dengan broker MT5). Semua signal dikira selepas candle tutup.<br>Alat bantuan analisis, bukan nasihat kewangan.</div>
+  <div class="foot">Versi dashboard: <b>v20 · 27 Nov</b><br>Data harga: Deriv (mungkin berbeza sedikit dengan broker MT5). Semua signal dikira selepas candle tutup.<br>Alat bantuan analisis, bukan nasihat kewangan.</div>
 </main>
 
 <dialog id="jDlg"><form method="dialog">
@@ -427,7 +428,8 @@ const store={get(k,d){try{const v=localStorage.getItem('wsz_'+k);return v==null?
 const METHOD={requireZone:false,requireBBMA:false,requireHTF:false,asiaFilter:false,sessLN:false,roomFilter:false,bbwFilter:false,slStruct:false,beR:0,pullback:true,extFilter:true,rr:1.5};
 const DASH_DEF=Object.assign({},WaddeySZ.DEF,{setupAlert:'off',newsFilter:true},METHOD);
 if(store.get('cfgVer',0)<2){const old=store.get('cfg',{});store.set('cfg',Object.assign({},old,METHOD));store.set('cfgVer',2);}
-let sym=store.get('sym','frxXAUUSD'),tf=store.get('tf','M5'),cfg=Object.assign({},DASH_DEF,store.get('cfg',{})),show=Object.assign({ema:true,bb:true,ma:false,e50:true,zone:true,setup:true,setupF:'all',patF:'loc'},store.get('show',{}));
+if(!store.get('tfMig',0)){store.set('tfMig',1);if(store.get('tf','M15')==='M5')store.set('tf','M15');}
+let sym=store.get('sym','frxXAUUSD'),tf=store.get('tf','M15'),cfg=Object.assign({},DASH_DEF,store.get('cfg',{})),show=Object.assign({ema:true,bb:true,ma:false,e50:true,zone:true,setup:true,setupF:'all',patF:'loc'},store.get('show',{}));delete show.clean;
 let PAT={cp:[],ch:[],st:{}};
 let ws=null,ep=0,rid=1,pend=new Map(),tickSub=null,srvOff=0,R=null,bars=[],all=[],busy=false,cur=null,live=null,dayOpen=null;
 if(cfg.setupAlert==null||(cfg.alertBB&&cfg.setupAlert==='off'&&!store.get('saMig',0))){cfg.setupAlert=cfg.alertBB?'all':'off';store.set('saMig',1);}
@@ -448,7 +450,7 @@ const conn=s=>$('connDot').className='dot '+s;
 const symName=()=>$('sym').selectedOptions[0].text;
 
 // ---------- TF bar
-$('tfSeg').innerHTML=Object.keys(TFS).map(k=>`<button data-tf="${k}" class="${k===tf?'on':''}">${k}</button>`).join('');
+$('tfSeg').innerHTML=Object.keys(TFS).map(k=>`<button data-tf="${k}" class="${k===tf?'on':''}"${k==='M5'?' title="M5: lebih banyak signal palsu"':''}>${k}${k==='M5'?'<sup style="font-size:9px;margin-left:1px">⚠️</sup>':''}</button>`).join('');
 $('tfSeg').onclick=e=>{const b=e.target.closest('button');if(!b)return;tf=b.dataset.tf;store.set('tf',tf);[...$('tfSeg').children].forEach(x=>x.classList.toggle('on',x===b));cur=null;refresh(true);};
 
 // ---------- WebSocket
@@ -472,7 +474,8 @@ async function candles(gran,count){const r=await send({ticks_history:sym,end:'la
 
 // ---------- chart
 const chart=LightweightCharts.createChart($('chart'),{layout:{background:{color:'#0f131b'},textColor:'#aab1c2',fontSize:11},
-  grid:{vertLines:{color:'#171c26'},horzLines:{color:'#171c26'}},timeScale:{timeVisible:true,secondsVisible:false,rightOffset:14,borderColor:'#252b38'},
+  grid:{vertLines:{color:'#171c26'},horzLines:{color:'#171c26'}},timeScale:{timeVisible:true,secondsVisible:false,rightOffset:14,borderColor:'#252b38',tickMarkFormatter:(t,ty)=>{const d=new Date(t*1000);return ty===0?String(d.getFullYear()):ty===1?d.toLocaleString('ms-MY',{month:'short'}):ty===2?d.toLocaleString('ms-MY',{day:'numeric',month:'short'}):d.toLocaleTimeString('ms-MY',{hour:'2-digit',minute:'2-digit',hour12:false});}},   // waktu tempatan (MYT), bukan GMT
+  
   rightPriceScale:{borderColor:'#252b38'},crosshair:{mode:0},localization:{timeFormatter:t=>fT(t)}});
 const cs=chart.addCandlestickSeries({upColor:'#22c55e',downColor:'#ef4444',borderVisible:false,wickUpColor:'#22c55e',wickDownColor:'#ef4444'});
 const L=(c,w,s)=>chart.addLineSeries({color:c,lineWidth:w||1,lineStyle:s||0,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
@@ -518,15 +521,21 @@ function setMarkers(){const m=[];const from=R.T[Math.max(R.S,R.T.length-400)];
     else if(x.type==='tpn')m.push({time:x.t,position:'aboveBar',color:'#86efac',shape:'circle',text:x.txt});
     else if(show.setup&&x.type==='bbB'&&setupOK(x))m.push({time:x.t,position:'belowBar',color:x.lengkap?'#facc15':'#14b8a6',shape:x.lengkap?'arrowUp':'circle',text:x.txt});
     else if(show.setup&&x.type==='bbS'&&setupOK(x))m.push({time:x.t,position:'aboveBar',color:x.lengkap?'#facc15':'#f472b6',shape:x.lengkap?'arrowDown':'circle',text:x.txt});});
-  const pf=show.patF||'loc';if(pf==='loc'||pf==='all')PAT.cp.forEach(x=>{if(x.t<from||x.d===0)return;if(pf==='loc'&&!x.goodLoc)return;
+  const pf=show.patF||'loc';if(pf==='loc'||pf==='all'||pf==='zone')PAT.cp.forEach(x=>{if(x.t<from||x.d===0)return;if(pf==='loc'&&!x.goodLoc)return;if(pf==='zone'&&!x.inZone)return;
     m.push({time:x.t,position:x.d>0?'belowBar':'aboveBar',color:x.d>0?'#a3e635':'#fb923c',shape:x.d>0?'arrowUp':'arrowDown',size:0.6,text:x.short});});
   m.sort((a,b)=>a.time-b.time);cs.setMarkers(m);
   plines.forEach(p=>cs.removePriceLine(p));plines=[];
   if(R.pend&&!R.pos){const q=R.pend;plines.push(cs.createPriceLine({price:q.level,color:'#d4af37',lineWidth:2,lineStyle:1,axisLabelVisible:true,title:(q.dir>0?'Pullback BUY':'Pullback SELL')}));}
   if(R.pos){const p=R.pos;const L2=[['Entry',p.entry,'#d4af37',2],['SL',p.sl,'#ef4444',0],['TP',p.tp,'#22c55e',0]];p.tpLv.forEach((v,i)=>L2.push(['TP'+(i+1),v,'#86efac',2]));
     L2.forEach(([t,v,c,s])=>plines.push(cs.createPriceLine({price:v,color:c,lineWidth:1,lineStyle:s,axisLabelVisible:true,title:t})));}}
-$('tog').onclick=e=>{const b=e.target.closest('button');if(!b)return;const k=b.dataset.k;show[k]=!show[k];b.classList.toggle('on',show[k]);store.set('show',show);if(R){setLines();setMarkers();drawOv();}};
-[...$('tog').children].forEach(b=>b.classList.toggle('on',!!show[b.dataset.k]));
+$('tog').onclick=e=>{const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.p){// pilihan cepat: tukar butang biasa, anda masih boleh hidup/tutup setiap satu selepas itu
+    if(b.dataset.p==='clean')Object.assign(show,{ema:true,e50:true,zone:true,bb:false,ma:false,setup:false,patF:'off'});
+    else Object.assign(show,{ema:true,e50:true,zone:true,bb:true,ma:true,setup:true,patF:'all'});
+  }else{const k=b.dataset.k;show[k]=!show[k];}
+  syncTog();store.set('show',show);if(R){setLines();setMarkers();drawOv();}};
+function syncTog(){[...$('tog').children].forEach(x=>{if(x.dataset.k)x.classList.toggle('on',!!show[x.dataset.k]);});$('patF').value=show.patF||'loc';$('setupF').style.opacity=show.setup?'':'.45';}
+syncTog();
 $('setupF').value=show.setupF||'all';$('patF').value=show.patF||'loc';$('patF').onchange=e=>{show.patF=e.target.value;store.set('show',show);if(R){setMarkers();drawOv();}};$('setupF').onchange=e=>{show.setupF=e.target.value;store.set('show',show);if(R)setMarkers();};
 
 // ---------- analisis ala trader pro
@@ -565,7 +574,33 @@ function analyse(){const k=R.C.length-1,c=live??R.C[k],a=R.A[k];
   if(d<0&&dem&&dem.dist<1*a)warns.push(`Demand dekat di bawah (${fx(dem.top)}). Ruang untuk turun terhad.`);
   const nn=newsNear();if(nn)warns.unshift(nn.msg);
   const ss2=session();if(ss2[2]==='n')warns.push(`Sesi ${ss2[0]}: ${ss2[1].toLowerCase()}. Lebih baik tunggu London / New York.`);
-  return{d,big,act,chk,sc,max:chk.length,warns,dem,sup,c,a};}
+  if(tf==='M5')warns.push('M5 beri lebih banyak signal palsu. Notifikasi anda guna M15 / H1: lebih baik buat keputusan di M15 atau H1.');
+  const V=methodVerdict(c,a,k,htfTr,warns);
+  return Object.assign({bias:d,dem,sup,c,a,warns},V);}
+// keputusan ikut kaedah sistem (sama dengan signal, notifikasi & EA)
+function methodVerdict(c,a,k,htfTr,warns){const pos=R.pos,pend=R.pend,f=R.last||{},up=R.EF[k]>R.ES[k];
+  const gapA=Math.abs(R.EF[k]-R.ES[k])/a,distE=Math.abs(R.C[k]-R.E50[k])/a,candA=(R.H[k]-R.L[k])/a,nn=newsNear(),ss=session();
+  const nextD=up?-1:1,dI=pos?pos.dir:pend?pend.dir:nextD,DN=x=>x>0?'BUY':'SELL',isEma=(cfg.entrySrc||'ema')==='ema';
+  const eE=+cfg.extEmaATR||3,eC=+cfg.extCandleATR||2;
+  const chk=[
+    [!cfg.extFilter||distE<=eE,`Jarak harga dari EMA50: ${distE.toFixed(1)} ATR (had ${eE})`,'Tak jauh'],
+    [!cfg.extFilter||candA<=eC,`Saiz candle terakhir: ${candA.toFixed(1)} ATR (had ${eC})`,'Candle'],
+    [!nn,nn?'Berita impak tinggi dekat: signal baru disekat':'Tiada berita impak tinggi dalam 30 minit','Berita'],
+    [htfTr==null?R.trend===dI:htfTr===dI,`TF besar (${HTF[tf]}) ${htfTr==null?'—':htfTr>0?'naik':'turun'}: ${(htfTr==null?R.trend===dI:htfTr===dI)?'searah':'berlawanan'} dengan ${DN(dI)}`,'TF besar'],
+    [ss[2]!=='n',`Sesi ${ss[0]}`,'Sesi']];
+  const sc=chk.filter(x=>x[0]).length;let d=0,big,act;
+  const op=(live==null||Date.now()-lastTickAt>120000)?mktOpenAt():0;
+  if(pos){const rr=((live??c)-pos.entry)*pos.dir/(pos.risk||Math.abs(pos.entry-pos.sl));d=pos.dir;big=DN(d)+' AKTIF';
+    act=`Trade <b>${DN(d)}</b> berjalan sejak ${ago(pos.t)}: Entry ${fx(pos.entry)} · SL ${fx(pos.sl)} · TP ${fx(pos.tp)} (sekarang ${rr>=0?'+':''}${rr.toFixed(2)}R). Biar trade berjalan sampai TP atau SL. Jangan alih SL jauh.`+(chk[3][0]?'':' ⚠️ TF besar berlawanan: boleh kecilkan risiko atau tutup separuh di 1R.');}
+  else if(pend){d=pend.dir;big=DN(d)+' MENUNGGU';
+    act=`Order <b>${d>0?'BUY LIMIT':'SELL LIMIT'} di ${fx(pend.level)}</b> · SL ${fx(pend.sl)}. Sah ${pend.left} candle lagi. Kalau harga tak sampai ke paras itu, signal batal: jangan kejar harga.`;}
+  else if(op>nowS()){big='PASARAN TUTUP';act=`Pasaran buka semula ${fMYT(op)} (waktu Malaysia). Tiada tindakan sekarang.`;}
+  else if(f.news){big='DISEKAT BERITA';act='Signal baru keluar tapi disekat kerana berita impak tinggi. Jangan buka trade sehingga 30 minit selepas berita.';}
+  else{big='TUNGGU SIGNAL';
+    act=isEma?`Tiada signal sekarang. EMA 5/13 sedang <b>${up?'naik':'turun'}</b>; signal seterusnya ialah <b>${DN(nextD)}</b> bila EMA5 potong ${nextD>0?'atas':'bawah'} EMA13 (jarak sekarang ${gapA.toFixed(1)} ATR).`:`Tiada signal sekarang. Tunggu signal ${srcName(cfg)} keluar.`;
+    if(!chk[0][0])act+=' Harga terlalu jauh dari EMA50: signal akan dibuang sehingga harga kembali dekat.';
+    act+=' Jangan masuk tanpa signal.';}
+  return{d,big,act,chk,sc,max:chk.length};}
 
 
 // ---------- Bacaan AI (corak candle + corak chart + konteks)
@@ -581,7 +616,7 @@ function aiData(an){const k=R.C.length-1,c=an.c,a=an.a,out={};
   // corak candle 3 candle terakhir
   const rc=PAT.cp.filter(x=>x.k>=k-2).reverse();
   out.cand=rc.map(x=>{const st=PAT.st[x.key],use=x.goodLoc&&st&&st.loc[1]>=8?st.loc:st&&st.all;const w=pct(use);
-    const n=WaddeyPat.NAMES[x.key];return {x,txt:`<b class="${x.d>0?'bull':x.d<0?'bear':''}">${x.name}</b> (${k-x.k===0?'candle terakhir':(k-x.k)+' candle lalu'})${x.goodLoc?' di lokasi baik':''}. ${n.m}`+(w!=null?` <span class="k">Sejarah: menang ${w}% (${use[1]} kali).</span>`:'')};});
+    const n=WaddeyPat.NAMES[x.key];return {x,txt:`<b class="${x.d>0?'bull':x.d<0?'bear':''}">${x.name}</b> (${k-x.k===0?'candle terakhir':(k-x.k)+' candle lalu'})${x.inZone?(x.d>0?' <b>di zon Demand</b>':' <b>di zon Supply</b>'):x.goodLoc?' di lokasi baik':''}. ${n.m}`+(w!=null?` <span class="k">Sejarah: menang ${w}% (${use[1]} kali).</span>`:'')};});
   out.chart=PAT.ch.map(p=>({p,txt:`<b class="${p.d>0?'bull':p.d<0?'bear':''}">${p.name}</b> · ${p.status}. ${p.msg}`}));
   const pos=R.pos,pend=R.pend,ls=R.marks.filter(x=>x.type==='buy'||x.type==='sell').pop();
   out.sig=pos?`Trade <b class="${pos.dir>0?'bull':'bear'}">${pos.dir>0?'BUY':'SELL'}</b> sedang berjalan: Entry ${fx(pos.entry)} · SL ${fx(pos.sl)} · TP ${fx(pos.tp)}.`:pend?`${pend.dir>0?'BUY':'SELL'} menunggu pullback di ${fx(pend.level)} (${pend.left} candle lagi).`:ls?`Tiada trade berjalan. Signal terakhir ${ls.type==='buy'?'BUY':'SELL'} ${ago(ls.t)}.`:'Tiada signal dalam data semasa.';
@@ -608,7 +643,7 @@ function renderAI(an){const d=aiData(an);const el=$('aiRead');
   const b=$('aiBias');b.textContent=d.bias;b.className='pill '+(d.sc>=2?'b':d.sc<=-2?'s':'n');
   const st=PAT.st,keys=WaddeyPat.ORDER.filter(x=>st[x]);
   const cell=v=>v&&v[1]?`<b class="${v[0]/v[1]>=.55?'bull':v[0]/v[1]>=.45?'gold':'bear'}">${Math.round(v[0]/v[1]*100)}%</b> <span class="k">(${v[1]})</span>`:'<span class="k">—</span>';
-  $('patStats').innerHTML=keys.length?`<table style="font-size:12px"><thead><tr><th>Corak</th><th>Semua</th><th>Lokasi baik</th><th>Searah EMA50</th></tr></thead><tbody>${keys.map(x=>`<tr><td><b class="${WaddeyPat.NAMES[x].d>0?'bull':'bear'}">${WaddeyPat.NAMES[x].n}</b></td><td>${cell(st[x].all)}</td><td>${cell(st[x].loc)}</td><td>${cell(st[x].trend)}</td></tr>`).join('')}</tbody></table>`:'<div class="k">Belum cukup data.</div>';}
+  $('patStats').innerHTML=keys.length?`<table style="font-size:12px"><thead><tr><th>Corak</th><th>Semua</th><th>Di zon</th><th>Lokasi baik</th><th>Searah EMA50</th></tr></thead><tbody>${keys.map(x=>`<tr><td><b class="${WaddeyPat.NAMES[x].d>0?'bull':'bear'}">${WaddeyPat.NAMES[x].n}</b></td><td>${cell(st[x].all)}</td><td>${cell(st[x].zone)}</td><td>${cell(st[x].loc)}</td><td>${cell(st[x].trend)}</td></tr>`).join('')}</tbody></table>`:'<div class="k">Belum cukup data.</div>';}
 const strip=h=>String(h).replace(/<br>/g,'\n').replace(/<[^>]+>/g,'').replace(/&amp;/g,'&');
 function aiText(){const an=analyse(),d=aiData(an),k=R.C.length-1,dz=x=>`${fx(x.bot)}–${fx(x.top)} (${x.strength}${x.dist!=null?'':''})`;
   const nowMYT=new Date(nowS()*1000).toLocaleString('ms-MY',{timeZone:'Asia/Kuala_Lumpur',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false});
@@ -659,8 +694,7 @@ function render(){const k=R.C.length-1,an=analyse();
   $('vAction').innerHTML=an.act;$('vTime').textContent='Candle '+fH(R.T[k]);
   $('vChecks').innerHTML=an.chk.map(([ok,t])=>`<div class="chk"><b class="${ok?'y':'x'}">${ok?'✓':'✕'}</b><span>${t}</span></div>`).join('');
   $('vWarns').innerHTML=an.warns.map(w=>`<div class="warn">⚠️ ${w}</div>`).join('');
-  const short=['EMA','BBMA','EMA50','TF besar','Zon'];
-  $('vChips').innerHTML=an.chk.map(([ok],i)=>`<span class="${ok?'y':'x'}">${ok?'✓':'✕'} ${short[i]||''}</span>`).join('')+(an.warns.length?`<span class="x" style="background:rgba(250,204,21,.12);color:#fde68a">⚠️ ${an.warns.length} amaran</span>`:'');
+  $('vChips').innerHTML=an.chk.map(([ok,,sh])=>`<span class="${ok?'y':'x'}">${ok?'✓':'✕'} ${sh||''}</span>`).join('')+(an.warns.length?`<span class="x" style="background:rgba(250,204,21,.12);color:#fde68a">⚠️ ${an.warns.length} amaran</span>`:'');
   renderBars();
   $('atr').textContent=fxd(R.A[k]);
   // trade aktif
@@ -991,7 +1025,7 @@ function renderNews(){const n=nowS(),up=news.filter(e=>e.t>n-3600).slice(0,8);co
 function renderSimple(){if(!R)return;const an=analyse(),k=R.C.length-1;
   $('sSym').textContent=symName()+' · '+tf;$('sPrice').textContent=fx(live??R.C[k]);
   const col=an.d>0?'var(--bull)':an.d<0?'var(--bear)':'var(--mut)';
-  $('sVerdict').textContent=an.big;$('sVerdict').style.color=col;$('sScore').textContent='Pengesahan '+an.sc+'/'+an.max;$('sAct').innerHTML=an.act;
+  $('sVerdict').textContent=an.big;$('sVerdict').style.color=col;$('sScore').textContent='Syarat OK '+an.sc+'/'+an.max;$('sAct').innerHTML=an.act;
   $('sVerdictCard').style.borderColor=an.d>0?'rgba(34,197,94,.5)':an.d<0?'rgba(239,68,68,.5)':'var(--line)';
   const p=R.pos;
   if(p){const c=live??R.C[k],risk=p.risk||Math.abs(p.entry-p.sl),r=(c-p.entry)*p.dir/risk;

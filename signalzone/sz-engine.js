@@ -91,6 +91,7 @@ function compute(bars, cfgIn, startBars) {
   // ---- gelung utama
   const S = Math.max(3, N - (startBars || 1500));
   const Mk = []; let inPos = false, posType = 0, entry = 0, sl = 0, tp = 0, posBar = -1, tpLv = [], tpHit = [], posRisk = 0, beDone = false;
+  const ZDT = new Uint8Array(N), ZST = new Uint8Array(N);   // candle menyentuh zon Demand / Supply
   let lastDemTouch = -1e9, lastSupTouch = -1e9, lastDemStr = '', lastSupStr = '', lastReB = -1e9, lastReS = -1e9, lastDemBot = 0, lastSupTop = 0;
   // arah TF besar pada masa candle k tutup (candle TF besar yang sudah tutup sahaja, tiada repaint)
   const HT = P.htf && P.htf.length ? P.htf : null; let hi0 = 0;
@@ -102,8 +103,8 @@ function compute(bars, cfgIn, startBars) {
     const last = k === N - 1; let newsBlk = false;
     zoneStep(k);
     let supT = false, supB = false, demT = false, demB = false;
-    Sup.forEach(z => { if (H[k] >= z.bot && L[k] <= z.top) { supT = true; lastSupTouch = k; lastSupStr = strength(z.score); lastSupTop = z.top; } if (C[k] > z.top) supB = true; });
-    Dem.forEach(z => { if (H[k] >= z.bot && L[k] <= z.top) { demT = true; lastDemTouch = k; lastDemStr = strength(z.score); lastDemBot = z.bot; } if (C[k] < z.bot) demB = true; });
+    Sup.forEach(z => { if (H[k] >= z.bot && L[k] <= z.top) { supT = true; ZST[k] = 1; lastSupTouch = k; lastSupStr = strength(z.score); lastSupTop = z.top; } if (C[k] > z.top) supB = true; });
+    Dem.forEach(z => { if (H[k] >= z.bot && L[k] <= z.top) { demT = true; ZDT[k] = 1; lastDemTouch = k; lastDemStr = strength(z.score); lastDemBot = z.bot; } if (C[k] < z.bot) demB = true; });
     if (P.deleteBroken) {
       for (let i = Sup.length - 1; i >= 0; i--) if (C[k] > Sup[i].top) Sup.splice(i, 1);
       for (let i = Dem.length - 1; i >= 0; i--) if (C[k] < Dem[i].bot) Dem.splice(i, 1);
@@ -269,7 +270,7 @@ function compute(bars, cfgIn, startBars) {
     return Object.assign({}, z, { rank: r, alpha: Math.max(0, 1 - Math.min(100, tr) / 100), strength: strength(z.score), t: T[z.left] });
   });
   return {
-    T, O, H, L, C, A, EF, ES, UP, MD, LO, MHF, MHS, MLF, MLS, E50, BTr, S,
+    ZDT, ZST, T, O, H, L, C, A, EF, ES, UP, MD, LO, MHF, MHS, MLF, MLS, E50, BTr, S,
     sup: rankZ(Sup), dem: rankZ(Dem), marks: Mk, last: lastFlags,
     pos: inPos ? { dir: posType, entry, sl, tp, tpLv: tpLv.slice(), bar: posBar, t: T[posBar], risk: posRisk, be: beDone } : null,
     pend: (pend && P.pbBars - (N - 1 - pend.k0) > 0) ? { dir: pend.d, level: pend.level, sl: pend.sl0, t: T[pend.k0], left: P.pbBars - (N - 1 - pend.k0), tags: pend.tags } : null,
