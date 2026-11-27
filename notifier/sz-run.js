@@ -142,11 +142,13 @@ async function main() {
     }
     const R = SZ.compute(bars, Object.assign({}, CFG, { tfSec: sec, htf }), 1500);
     const st = state.tf[tf] = state.tf[tf] || {};
-    // hanya peristiwa baru sejak semakan lepas (maksimum 2 candle ke belakang)
-    const since = Math.max(st.lastBar || 0, lastT - sec * 2);
+    // peristiwa baru sejak candle terakhir yang disemak. GitHub selalunya jalankan workflow ~sekali sejam
+    // (bukan setiap 5 minit), jadi semak semua candle sejak run lepas, maksimum 3 jam ke belakang.
+    const since = Math.max(st.lastBar || (lastT - sec * 2), lastT - 3 * 3600);
     const fresh = R.marks.filter(m => m.t > since && (['buy', 'sell', 'tp', 'sl', 'be', 'inv'].includes(m.type) || SZ.setupMatch(m, SETUP_ALERT)));
     st.lastBar = lastT;
     const ref = bars[bars.length - 1].c;
+    const age = m => { const mn = Math.round((now - (m.t + sec)) / 60); return mn >= 10 ? ` (${mn >= 60 ? Math.floor(mn / 60) + ' jam ' + (mn % 60) + ' minit' : mn + ' minit'} lalu)` : ''; };
     // gabung: setup BBMA yang searah dengan signal BUY/SELL pada candle yang sama masuk ke dalam notifikasi signal
     for (const m of fresh) {
       if (m.type === 'buy' || m.type === 'sell') {
@@ -156,18 +158,18 @@ async function main() {
         const stars = tg.length >= 2 ? '⭐⭐⭐' : tg.length === 1 ? '⭐⭐' : '⭐';
         const st = fresh.find(x => x.k === m.k && x.type === (m.type === 'buy' ? 'bbB' : 'bbS'));
         const stTxt = st ? `\n${st.lengkap ? '⭐ Setup BBMA lengkap' : 'Setup BBMA'}: ${st.list.join(' · ')} ${'⭐'.repeat(st.grade)}` : '';
-        await sendAll(subs, { title: `${m.type === 'buy' ? '🟢' : '🔴'} ${d} ${sym} ${tf} ${stars}${st && st.lengkap ? ' + BBMA lengkap' : ''}`,
-          body: `Entry ${fmt(m.price, ref)} · SL ${fmt(m.sl, ref)} · TP ${fmt(m.tp, ref)}\nSokongan: ${sup}${stTxt}${OFFSET ? '\n(harga broker)' : ''}`, tag: 'wsz-' + tf });
+        await sendAll(subs, { title: `${m.type === 'buy' ? '🟢' : '🔴'} ${d} ${sym} ${tf} ${stars}${st && st.lengkap ? ' + BBMA lengkap' : ''}${age(m)}`,
+          body: `Entry ${fmt(m.price, ref)} · SL ${fmt(m.sl, ref)} · TP ${fmt(m.tp, ref)}\nSokongan: ${sup}${stTxt}${OFFSET ? '\n(harga broker)' : ''}`, tag: 'wsz-' + tf + '-' + m.t });
       } else if (m.type === 'bbB' || m.type === 'bbS') {
         if (fresh.some(x => x.k === m.k && x.type === (m.type === 'bbB' ? 'buy' : 'sell'))) continue;   // sudah digabung dalam notifikasi signal
         const d = m.type === 'bbB' ? 'BUY' : 'SELL', w = m.why || {};
         const why = [w.htf ? 'TF besar searah' : '', w.zone ? (m.type === 'bbB' ? 'di Demand' : 'di Supply') : '', w.near ? 'dekat EMA50' : ''].filter(Boolean).join(' · ') || 'tiada sokongan tambahan';
-        await sendAll(subs, { title: `${m.lengkap ? '⭐ Setup BBMA lengkap' : '📐 Setup BBMA'} ${d} ${sym} ${tf} ${'⭐'.repeat(m.grade)}`,
-          body: `${m.list.join(' · ')} @ ${fmt(bars[m.k].c, ref)}\nSokongan: ${why}\nIni amaran setup, bukan signal entry. Semak chart dulu.`, tag: 'wsz-bb-' + tf });
+        await sendAll(subs, { title: `${m.lengkap ? '⭐ Setup BBMA lengkap' : '📐 Setup BBMA'} ${d} ${sym} ${tf} ${'⭐'.repeat(m.grade)}${age(m)}`,
+          body: `${m.list.join(' · ')} @ ${fmt(bars[m.k].c, ref)}\nSokongan: ${why}\nIni amaran setup, bukan signal entry. Semak chart dulu.`, tag: 'wsz-bb-' + tf + '-' + m.t });
       } else if (ALERT_TPSL) {
         const t = m.type === 'tp' ? `✅ TP kena · ${sym} ${tf}` : m.type === 'sl' ? `❌ SL kena · ${sym} ${tf}` : m.type === 'be' ? `⚪ Breakeven · ${sym} ${tf}` : `⚠️ ${m.txt} · ${sym} ${tf}`;
         const b = m.type === 'tp' ? `Sasaran ${CFG.rr}R tercapai. Trade selesai dengan untung.` : m.type === 'sl' ? 'Stop loss kena. Trade selesai -1R. Tunggu setup seterusnya.' : m.type === 'be' ? 'Harga kembali ke Entry selepas SL dialih. Trade selesai 0R (tiada rugi).' : 'Signal lama dibatalkan kerana signal arah lawan keluar.';
-        await sendAll(subs, { title: t, body: b, tag: 'wsz-res-' + tf });
+        await sendAll(subs, { title: t + age(m), body: b, tag: 'wsz-res-' + tf + '-' + m.t });
       }
     }
     console.log(tf, `semak OK · ${fresh.length} peristiwa baru`);
